@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+
+	"github.com/vostrok/rabbit"
 )
 
 var svc Service
@@ -16,6 +18,8 @@ func InitService(sConf ServiceConfig) {
 	initDatabase(sConf.dbConf)
 	svc.sConfig = sConf
 
+	svc.accessCampaign = rabbit.NewConsumer(sConf.Queue.AccessCampaign, sConf.RBMQ)
+	svc.contentSent = rabbit.NewConsumer(sConf.Queue.ContentSent, sConf.RBMQ)
 	if err := initCQR(); err != nil {
 		log.WithField("error", err.Error()).Fatal("Init CQR")
 	}
@@ -25,16 +29,23 @@ func InitService(sConf ServiceConfig) {
 }
 
 type Service struct {
-	db       *sql.DB
-	dbConfig DataBaseConfig
-	sConfig  ServiceConfig
-	tables   map[string]struct{}
+	db             *sql.DB
+	dbConfig       DataBaseConfig
+	accessCampaign rabbit.AMQPService
+	contentSent    rabbit.AMQPService
+	sConfig        ServiceConfig
+	tables         map[string]struct{}
+}
+type QueuesConfig struct {
+	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
+	ContentSent    string `default:"content_sent" yaml:"content_sent"`
 }
 type ServiceConfig struct {
-	RBMQUrl     string         `yaml:"rbmq_url" default:""`
-	dbConf      DataBaseConfig `yaml:"db"`
-	TablePrefix string         `default:"xmp_" yaml:"table_prefix"`
-	Tables      []string       `default:"subscriptions" yaml:"tables"`
+	RBMQ        rabbit.RBMQConfig `yaml:"rabbit"`
+	Queue       QueuesConfig      `yaml:"queues"`
+	dbConf      DataBaseConfig    `yaml:"db"`
+	TablePrefix string            `default:"xmp_" yaml:"table_prefix"`
+	Tables      []string          `default:"subscriptions" yaml:"tables"`
 }
 
 func initCQR() error {

@@ -6,7 +6,7 @@ newrelic:
   license: 4d635427ad90ca786ca2db6aa246ed651730b933
 
 service:
-  rbmq_url: http://RBMQ.Url
+  rbmq_url: amqp://linkit:dg-U_oHhy7-@52.66.23.201:5672
   table_prefix: xmp_
   tables:
   - subscriptions
