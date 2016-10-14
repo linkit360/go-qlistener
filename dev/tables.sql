@@ -1,0 +1,33 @@
+CREATE TABLE xmp_content_sent (
+  id serial PRIMARY KEY,
+  tid varchar(127) UNIQUE NOT NULL,
+  sent_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  msisdn varchar(32) NOT NULL DEFAULT "",
+  id_campaign INT NOT NULL DEFAULT 0,
+  id_service INT NOT NULL DEFAULT 0,
+  id_content INT NOT NULL DEFAULT 0,
+  id_subscription INT NOT NULL DEFAULT 0,
+  operator_code  INT NOT NULL DEFAULT 0,
+  country_code INT NOT NULL DEFAULT 0,
+);
+
+CREATE TABLE xmp_access_campaign(
+  id serial PRIMARY KEY,
+  tid varchar(127) UNIQUE NOT NULL ,
+  access_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  msisdn varchar(32) NOT NULL DEFAULT "",
+  ip varchar(32) NOT NULL DEFAULT 0,
+  operator_code  INT NOT NULL DEFAULT 0,
+  country_code INT NOT NULL DEFAULT 0,
+  supported boolean NOT NULL DEFAULT FALSE,
+  user_agent varchar(511) NOT NULL DEFAULT "",
+  referer varchar(511) NOT NULL DEFAULT "",
+  url_path varchar(511) NOT NULL DEFAULT "",
+  method varchar(127) NOT NULL DEFAULT "",
+  headers varchar(511) NOT NULL DEFAULT "",
+  content_error boolean NOT NULL DEFAULT FALSE,
+  file_error boolean NOT NULL DEFAULT FALSE,
+  id_campaign INT NOT NULL DEFAULT 0,
+  id_service INT NOT NULL DEFAULT 0,
+  id_content INT NOT NULL DEFAULT 0,
+);
