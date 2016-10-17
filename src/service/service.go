@@ -17,9 +17,10 @@ var svc Service
 const ACTIVE_STATUS = 1
 
 func InitService(sConf ServiceConfig) {
-	initDatabase(sConf.dbConf)
+	initDatabase(sConf.DbConf)
 	svc.sConfig = sConf
 
+	sConf.RBMQ.Metrics = rabbit.InitMetrics()
 	svc.accessCampaign = rabbit.NewConsumer(sConf.Queue.AccessCampaign, sConf.RBMQ)
 	svc.contentSent = rabbit.NewConsumer(sConf.Queue.ContentSent, sConf.RBMQ)
 	if err := initCQR(); err != nil {
@@ -51,8 +52,8 @@ type QueuesConfig struct {
 type ServiceConfig struct {
 	RBMQ        rabbit.RBMQConfig `yaml:"rabbit"`
 	Queue       QueuesConfig      `yaml:"queues"`
-	GeoIpPath   string            `yaml:"geoip_path"`
-	dbConf      DataBaseConfig    `yaml:"db"`
+	GeoIpPath   string            `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	DbConf      DataBaseConfig    `yaml:"db"`
 	TablePrefix string            `default:"xmp_" yaml:"table_prefix"`
 	Tables      []string          `default:"subscriptions" yaml:"tables"`
 }
@@ -155,7 +156,7 @@ func (s Subscription) key() string {
 	return fmt.Sprintf("%s-%d", s.Msisdn, s.ServiceId)
 }
 func (s Subscriptions) Reload() error {
-	query := fmt.Sprintf("select msisdn, id_service, id_subscription from "+
+	query := fmt.Sprintf("select id, msisdn, id_service from "+
 		"%ssubscriptions where status = $1", svc.sConfig.TablePrefix)
 	rows, err := svc.db.Query(query, ACTIVE_STATUS)
 	if err != nil {
@@ -168,9 +169,9 @@ func (s Subscriptions) Reload() error {
 		record := Subscription{}
 
 		if err := rows.Scan(
+			&record.SubscriptionId,
 			&record.Msisdn,
 			&record.ServiceId,
-			&record.SubscriptionId,
 		); err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package qlistener
+package main
 
 import (
 	"github.com/vostrok/qlistener/src"

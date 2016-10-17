@@ -31,4 +31,5 @@ func RunServer() {
 	rg := r.Group("/debug")
 	rg.GET("/vars", expvar.Handler())
 	r.Run(":" + appConfig.Server.Port)
+	log.WithField("port", appConfig.Server.Port).Info("Qlistener init")
 }

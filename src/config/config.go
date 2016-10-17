@@ -11,7 +11,7 @@ import (
 )
 
 type ServerConfig struct {
-	Port string `default:"70501"`
+	Port string `default:"50304"`
 }
 type NewRelicConfig struct {
 	AppName string `default:"qlistener.linkit360.com"`
