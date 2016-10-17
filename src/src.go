@@ -11,10 +11,10 @@ import (
 	"github.com/gin-gonic/contrib/expvar"
 	"github.com/gin-gonic/gin"
 
-	"github.com/vostrok/contentd/service"
 	"github.com/vostrok/qlistener/src/config"
 	"github.com/vostrok/qlistener/src/metrics"
 	"github.com/vostrok/qlistener/src/newrelic"
+	"github.com/vostrok/qlistener/src/service"
 )
 
 func RunServer() {

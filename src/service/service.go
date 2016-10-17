@@ -3,9 +3,11 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"net"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/oschwald/geoip2-golang"
 
 	"github.com/vostrok/rabbit"
 )
@@ -23,6 +25,11 @@ func InitService(sConf ServiceConfig) {
 	if err := initCQR(); err != nil {
 		log.WithField("error", err.Error()).Fatal("Init CQR")
 	}
+	var err error
+	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
+	if err != nil {
+		log.WithField("error", err.Error()).Fatal("Init GeoIp")
+	}
 	go func() {
 		contentSent()
 	}()
@@ -33,6 +40,7 @@ type Service struct {
 	dbConfig       DataBaseConfig
 	accessCampaign rabbit.AMQPService
 	contentSent    rabbit.AMQPService
+	ipDb           *geoip2.Reader
 	sConfig        ServiceConfig
 	tables         map[string]struct{}
 }
@@ -43,6 +51,7 @@ type QueuesConfig struct {
 type ServiceConfig struct {
 	RBMQ        rabbit.RBMQConfig `yaml:"rabbit"`
 	Queue       QueuesConfig      `yaml:"queues"`
+	GeoIpPath   string            `yaml:"geoip_path"`
 	dbConf      DataBaseConfig    `yaml:"db"`
 	TablePrefix string            `default:"xmp_" yaml:"table_prefix"`
 	Tables      []string          `default:"subscriptions" yaml:"tables"`
@@ -80,6 +89,47 @@ func CQR(table string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+type IpInfo struct {
+	Ip                  string
+	Country             string
+	Iso                 string
+	City                string
+	Timezone            string
+	Latitude            float64
+	Longitude           float64
+	MetroCode           uint
+	PostalCode          string
+	Subdivisions        string
+	IsAnonymousProxy    bool
+	IsSatelliteProvider bool
+	AccuracyRadius      uint16
+}
+
+func geoIp(ip string) (IpInfo, error) {
+	record, err := svc.ipDb.City(net.ParseIP(ip))
+	if err != nil {
+		return IpInfo{}, fmt.Errorf("GeoIP Parse City: %s", err.Error())
+	}
+	ipInfo := IpInfo{
+		Ip:                  ip,                         // => 81.2.69.142
+		Country:             record.Country.Names["en"], // => United Kingdom
+		Iso:                 record.Country.IsoCode,     // => GB
+		City:                record.City.Names["en"],    //  => Arnold
+		Timezone:            record.Location.TimeZone,   // => Europe/London
+		Latitude:            record.Location.Latitude,   // => 53
+		Longitude:           record.Location.Longitude,  // => -1.1333
+		MetroCode:           record.Location.MetroCode,
+		AccuracyRadius:      record.Location.AccuracyRadius,
+		PostalCode:          record.Postal.Code, // => NG5
+		IsAnonymousProxy:    record.Traits.IsAnonymousProxy,
+		IsSatelliteProvider: record.Traits.IsSatelliteProvider,
+	}
+	if len(record.Subdivisions) > 0 {
+		ipInfo.Subdivisions = record.Subdivisions[0].Names["en"] // => England
+	}
+	return ipInfo, nil
 }
 
 // msisdn _ service_id ==> subscription_id
