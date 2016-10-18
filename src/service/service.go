@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/oschwald/geoip2-golang"
 
+	"github.com/vostrok/db"
 	"github.com/vostrok/rabbit"
 )
 
@@ -17,7 +18,7 @@ var svc Service
 const ACTIVE_STATUS = 1
 
 func InitService(sConf ServiceConfig) {
-	initDatabase(sConf.DbConf)
+	svc.db = db.Init(sConf.DbConf)
 	svc.sConfig = sConf
 
 	sConf.RBMQ.Metrics = rabbit.InitMetrics()
@@ -38,7 +39,6 @@ func InitService(sConf ServiceConfig) {
 
 type Service struct {
 	db             *sql.DB
-	dbConfig       DataBaseConfig
 	accessCampaign rabbit.AMQPService
 	contentSent    rabbit.AMQPService
 	ipDb           *geoip2.Reader
@@ -53,7 +53,7 @@ type ServiceConfig struct {
 	RBMQ        rabbit.RBMQConfig `yaml:"rabbit"`
 	Queue       QueuesConfig      `yaml:"queues"`
 	GeoIpPath   string            `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	DbConf      DataBaseConfig    `yaml:"db"`
+	DbConf      db.DataBaseConfig `yaml:"db"`
 	TablePrefix string            `default:"xmp_" yaml:"table_prefix"`
 	Tables      []string          `default:"subscriptions" yaml:"tables"`
 }

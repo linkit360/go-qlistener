@@ -52,8 +52,6 @@ func contentSent() {
 					).Scan(&t.SubscriptionId); err != nil {
 
 						// not handled, back to rbmq
-						//svc.recordContentGiven <- t
-
 						log.WithFields(log.Fields{
 							"error":        err.Error(),
 							"subscription": t}).
@@ -94,8 +92,6 @@ func contentSent() {
 					"error":   err.Error()}).
 					Error("add sent content")
 				// not handled, back to rbmq
-				//svc.recordContentGiven <- t
-				//svc.recordContentGiven <- t
 				time.Sleep(time.Second)
 			} else {
 				msg.Ack(true)
@@ -104,15 +100,3 @@ func contentSent() {
 	}
 
 }
-
-//type ContentSentProperties struct {
-//	Msisdn         string `json:"msisdn"`
-//	ContentPath    string `json:"content_path"`
-//	CapmaignHash   string `json:"capmaign_hash"`
-//	CampaignId     int64  `json:"campaign_id"`
-//	ContentId      int64  `json:"content_id"`
-//	ServiceId      int64  `json:"service_id"`
-//	SubscriptionId int64  `json:"subscription_id"`
-//	CountryCode    int64  `json:"country_code"`
-//	OperatorCode   int64  `json:"operator_code"`
-//}

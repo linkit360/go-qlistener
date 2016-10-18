@@ -101,7 +101,7 @@ func accessCampaign() {
 					"access_log": t,
 					"error":      err.Error()}).
 					Error("add access campaign log failed")
-				// not handled, back to rbmq
+				//not handled, back to rbmq
 				//svc.recordContentGiven <- t
 				//svc.recordContentGiven <- t
 				time.Sleep(time.Second)
