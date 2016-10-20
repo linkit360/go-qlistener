@@ -40,7 +40,7 @@ func contentSent() {
 						"country_code, "+
 						"operator_code) "+
 						" values ($1, $2, $3, $4, $5, $6) RETURNING id",
-						svc.sConfig.TablePrefix)
+						svc.sConfig.DbConf.TablePrefix)
 
 					if err := svc.db.QueryRow(query,
 						";",
@@ -76,7 +76,7 @@ func contentSent() {
 				"id_content, "+
 				"country_code, "+
 				"operator_code)"+
-				" values ($1, $2, $3, $4, $5)", svc.sConfig.TablePrefix)
+				" values ($1, $2, $3, $4, $5)", svc.sConfig.DbConf.TablePrefix)
 
 			if _, err := svc.db.Exec(query,
 				t.Msisdn,

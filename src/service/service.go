@@ -2,11 +2,15 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"strings"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gin-gonic/gin"
 	"github.com/oschwald/geoip2-golang"
 
 	"github.com/vostrok/db"
@@ -34,6 +38,7 @@ func InitService(sConf ServiceConfig) {
 	}
 	go func() {
 		contentSent()
+		accessCampaign()
 	}()
 }
 
@@ -50,12 +55,11 @@ type QueuesConfig struct {
 	ContentSent    string `default:"content_sent" yaml:"content_sent"`
 }
 type ServiceConfig struct {
-	RBMQ        rabbit.RBMQConfig `yaml:"rabbit"`
-	Queue       QueuesConfig      `yaml:"queues"`
-	GeoIpPath   string            `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	DbConf      db.DataBaseConfig `yaml:"db"`
-	TablePrefix string            `default:"xmp_" yaml:"table_prefix"`
-	Tables      []string          `default:"subscriptions" yaml:"tables"`
+	GeoIpPath string            `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	RBMQ      rabbit.RBMQConfig `yaml:"rabbit"`
+	Queue     QueuesConfig      `yaml:"queues"`
+	DbConf    db.DataBaseConfig `yaml:"db"`
+	Tables    []string          `default:"subscriptions" yaml:"tables"`
 }
 
 func initCQR() error {
@@ -69,6 +73,45 @@ func initCQR() error {
 	return nil
 }
 
+type response struct {
+	Success bool        `json:"success,omitempty"`
+	Err     error       `json:"error,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+	Status  int         `json:"-"`
+}
+
+func AddCQRHandlers(r *gin.Engine) {
+	rg := r.Group("/cqr")
+	rg.GET("", Reload)
+}
+
+func render(msg response, c *gin.Context) {
+	if msg.Err != nil {
+		c.Header("Error", msg.Err.Error())
+		c.Error(msg.Err)
+	}
+	c.JSON(msg.Status, msg)
+}
+
+func Reload(c *gin.Context) {
+	var err error
+	r := response{Err: err, Status: http.StatusOK}
+
+	table, exists := c.GetQuery("table")
+	if !exists || table == "" {
+		table, exists = c.GetQuery("t")
+		if !exists || table == "" {
+			err := errors.New("Table name required")
+			r.Status = http.StatusBadRequest
+			r.Err = err
+			render(r, c)
+			return
+		}
+	}
+	r.Success, r.Err = CQR(table)
+	render(r, c)
+	return
+}
 func CQR(table string) (bool, error) {
 	if len(table) == 0 {
 		log.WithField("error", "No table name given").Errorf("CQR request")
@@ -80,8 +123,8 @@ func CQR(table string) (bool, error) {
 		return false, nil
 	}
 	// should we re-build service
-	switch table {
-	case "subscriptions":
+	switch {
+	case strings.Contains(table, "subscriptions"):
 		if err := subscriptions.Reload(); err != nil {
 			return false, fmt.Errorf("subscriptions.Reload: %s", err.Error())
 		}
@@ -157,7 +200,7 @@ func (s Subscription) key() string {
 }
 func (s Subscriptions) Reload() error {
 	query := fmt.Sprintf("select id, msisdn, id_service from "+
-		"%ssubscriptions where status = $1", svc.sConfig.TablePrefix)
+		"%ssubscriptions where status = $1", svc.sConfig.DbConf.TablePrefix)
 	rows, err := svc.db.Query(query, ACTIVE_STATUS)
 	if err != nil {
 		return fmt.Errorf("Subscriptions Query: %s, query: %s", err.Error(), query)
