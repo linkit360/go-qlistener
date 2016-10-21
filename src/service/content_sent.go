@@ -30,22 +30,24 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			if !ok {
 				// do not set id_subscriber: msisdn is enough
 				query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+
-					"status, "+
+					"result, "+
 					"id_campaign, "+
 					"id_service, "+
 					"msisdn, "+
 					"country_code, "+
-					"operator_code) "+
-					" values ($1, $2, $3, $4, $5, $6) RETURNING id",
+					"operator_code, "+
+					"price "+
+					") values ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 					svc.sConfig.DbConf.TablePrefix)
 
 				if err := svc.db.QueryRow(query,
-					";",
+					"",
 					t.CampaignId,
 					t.ServiceId,
 					t.Msisdn,
 					t.CountryCode,
 					t.OperatorCode,
+					t.Price,
 				).Scan(&t.SubscriptionId); err != nil {
 					log.WithFields(log.Fields{
 						"error":       err.Error(),

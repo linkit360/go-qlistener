@@ -11,7 +11,7 @@ CREATE TABLE xmp_content_sent (
   country_code      INT NOT NULL DEFAULT 0,
 );
 
-CREATE TABLE xmp_access_campaign(
+CREATE TABLE xmp_access_campaign (
   id                          serial PRIMARY KEY,
   tid                         varchar(127) UNIQUE NOT NULL ,
   access_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
