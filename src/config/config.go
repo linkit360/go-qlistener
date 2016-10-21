@@ -35,7 +35,7 @@ func LoadConfig() AppConfig {
 	}
 
 	appConfig.Server.Port = envString("PORT", appConfig.Server.Port)
-	appConfig.Service.RBMQ.Url = envString("RBMQ_URL", appConfig.Service.RBMQ.Url)
+	appConfig.Service.Consumer.Uri = envString("RBMQ_URL", appConfig.Service.Consumer.Uri)
 
 	log.WithField("config", appConfig).Info("Config loaded")
 	return appConfig

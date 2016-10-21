@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/oschwald/geoip2-golang"
+	amqp_driver "github.com/streadway/amqp"
 
 	"github.com/vostrok/db"
 	"github.com/vostrok/rabbit"
@@ -22,30 +23,54 @@ var svc Service
 const ACTIVE_STATUS = 1
 
 func InitService(sConf ServiceConfig) {
+	var err error
+
 	svc.db = db.Init(sConf.DbConf)
 	svc.sConfig = sConf
 
-	sConf.RBMQ.Metrics = rabbit.InitMetrics()
-	svc.accessCampaign = rabbit.NewConsumer(sConf.Queue.AccessCampaign, sConf.RBMQ)
-	svc.contentSent = rabbit.NewConsumer(sConf.Queue.ContentSent, sConf.RBMQ)
+	svc.consumer = rabbit.NewConsumer(sConf.Consumer)
+	if err := svc.consumer.Connect(); err != nil {
+		log.Fatal("rbmq connect: %s", err.Error())
+	}
+
+	svc.accessCampaign, err = svc.consumer.AnnounceQueue(
+		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"queue": sConf.Queue.AccessCampaign,
+			"error": err.Error(),
+		}).Fatal("rbmq consumer: AnnounceQueue")
+	}
+	svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
+		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
+
+	svc.contentSent, err = svc.consumer.AnnounceQueue(
+		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
+	if err != nil {
+
+		log.WithFields(log.Fields{
+			"queue": sConf.Queue.ContentSent,
+			"error": err.Error(),
+		}).Fatal("rbmq consumer: AnnounceQueue")
+	}
+
+	svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
+		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
+
 	if err := initCQR(); err != nil {
 		log.WithField("error", err.Error()).Fatal("Init CQR")
 	}
-	var err error
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
 	if err != nil {
 		log.WithField("error", err.Error()).Fatal("Init GeoIp")
 	}
-	go func() {
-		contentSent()
-		accessCampaign()
-	}()
 }
 
 type Service struct {
 	db             *sql.DB
-	accessCampaign rabbit.AMQPService
-	contentSent    rabbit.AMQPService
+	consumer       *rabbit.Consumer
+	contentSent    <-chan amqp_driver.Delivery
+	accessCampaign <-chan amqp_driver.Delivery
 	ipDb           *geoip2.Reader
 	sConfig        ServiceConfig
 	tables         map[string]struct{}
@@ -55,11 +80,12 @@ type QueuesConfig struct {
 	ContentSent    string `default:"content_sent" yaml:"content_sent"`
 }
 type ServiceConfig struct {
-	GeoIpPath string            `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	RBMQ      rabbit.RBMQConfig `yaml:"rabbit"`
-	Queue     QueuesConfig      `yaml:"queues"`
-	DbConf    db.DataBaseConfig `yaml:"db"`
-	Tables    []string          `default:"subscriptions" yaml:"tables"`
+	GeoIpPath    string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	ThreadsCount int                   `default:"1" yaml:"threads_count"`
+	Consumer     rabbit.ConsumerConfig `yaml:"consumer"`
+	Queue        QueuesConfig          `yaml:"queues"`
+	DbConf       db.DataBaseConfig     `yaml:"db"`
+	Tables       []string              `default:"subscriptions" yaml:"tables"`
 }
 
 func initCQR() error {

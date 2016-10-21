@@ -7,11 +7,16 @@ newrelic:
 
 service:
   geoip_path: dev/GeoLite2-City.mmdb
+  threads_count: 1
 
-  rabbit:
-    url: amqp://linkit:dg-U_oHhy7-@52.66.23.201:5672
-#    url: amqp://guest:guest@52.66.23.201:5672
-    chan_gap: 10000000
+  consumer:
+    uri: amqp://linkit:dg-U_oHhy7-@52.66.23.201:5672
+    queue_prefetch_count: 4
+    binding_key: ""
+    exchange_type: direct # direct | fanout | topic | headers (match)
+    exchange: ""
+    tag: qlistener
+    reconnect_delay: 10
 
   queues:
     access_campaign: access_campaign
