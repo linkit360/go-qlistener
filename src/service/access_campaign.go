@@ -12,23 +12,23 @@ import (
 
 func accessCampaign(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		msg.Ack(false)
 		var t rbmq.AccessCampaignNotify
 
 		if err := json.Unmarshal(msg.Body, &t); err != nil {
 			log.WithFields(log.Fields{
-				"error":       err.Error(),
-				"contentsent": string(msg.Body)}).
-				Error("consume access campaign")
-			msg.Ack(true)
+				"error":          err.Error(),
+				"accessCampaign": string(msg.Body),
+				"msg":            "dropped",
+			}).Error("consume access campaign")
+			msg.Ack(false)
 			continue
 		}
 		ipInfo, err := geoIp(t.IP)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"error":           err.Error(),
-				"accessCcampaign": t,
-			}).Error("parse geo ip city")
+				"error":          err.Error(),
+				"accessCampaign": t,
+			}).Error("parse geo ip city, continued..")
 		}
 
 		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
@@ -96,15 +96,17 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.AccuracyRadius,
 		); err != nil {
 			log.WithFields(log.Fields{
-				"access_log": t,
-				"error":      err.Error()}).
-				Error("add access campaign log failed")
-			//not handled, back to rbmq
-			//svc.recordContentGiven <- t
-			//svc.recordContentGiven <- t
-			time.Sleep(time.Second)
-		} else {
-			msg.Ack(true)
+				"accessCampaign": t,
+				"error":          err.Error(),
+				"msg":            "requeue",
+			}).Error("add access campaign log failed")
+			msg.Nack(false, true)
+			continue
 		}
+
+		log.WithFields(log.Fields{
+			"accessCcampaign": t,
+		}).Info("processed successfully")
+		msg.Ack(false)
 	}
 }

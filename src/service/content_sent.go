@@ -12,15 +12,15 @@ import (
 
 func contentSent(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		msg.Ack(false)
 
 		var t service.ContentSentProperties
 		if err := json.Unmarshal(msg.Body, &t); err != nil {
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
-				"contentsent": string(msg.Body)}).
-				Error("consume content sent")
-			msg.Ack(true)
+				"msg":         "dropped",
+				"contentSent": string(msg.Body),
+			}).Error("consume content sent")
+			msg.Ack(false)
 			continue
 		}
 
@@ -48,22 +48,21 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 					t.CountryCode,
 					t.OperatorCode,
 				).Scan(&t.SubscriptionId); err != nil {
-
-					// not handled, back to rbmq
 					log.WithFields(log.Fields{
-						"error":        err.Error(),
-						"subscription": t}).
-						Error("add new subscription")
-					time.Sleep(time.Second)
+						"error":       err.Error(),
+						"msg":         "requeue",
+						"contentSent": t,
+					}).Error("add new subscription for sentcontent")
+					msg.Nack(false, true)
 					continue
 				}
 			}
 		}
 		if t.SubscriptionId == 0 {
 			log.WithFields(log.Fields{
-				"error":        "UNEXPECTED CODE REACHED",
-				"subscription": t}).
-				Error("add content sent")
+				"error":       "UNEXPECTED CODE REACHED",
+				"contentSent": t,
+			}).Error("add content sent")
 		}
 
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
@@ -73,8 +72,9 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			"id_subscription, "+
 			"id_content, "+
 			"country_code, "+
-			"operator_code)"+
-			" values ($1, $2, $3, $4, $5)", svc.sConfig.DbConf.TablePrefix)
+			"operator_code "+
+			") values ($1, $2, $3, $4, $5, $6, $7)",
+			svc.sConfig.DbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,
@@ -86,13 +86,16 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.OperatorCode,
 		); err != nil {
 			log.WithFields(log.Fields{
-				"content": t,
-				"error":   err.Error()}).
-				Error("add sent content")
-			// not handled, back to rbmq
-			time.Sleep(time.Second)
-		} else {
-			msg.Ack(true)
+				"contentSent": t,
+				"msg":         "requeue",
+				"error":       err.Error(),
+			}).Error("add sent content")
+			msg.Nack(false, true)
+			continue
 		}
+		log.WithFields(log.Fields{
+			"contentSent": t,
+		}).Info("processed successfully")
+		msg.Ack(false)
 	}
 }
