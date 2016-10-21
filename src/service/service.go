@@ -23,6 +23,7 @@ var svc Service
 const ACTIVE_STATUS = 1
 
 func InitService(sConf ServiceConfig) {
+	log.SetLevel(log.DebugLevel)
 	var err error
 
 	svc.db = db.Init(sConf.DbConf)
@@ -41,7 +42,7 @@ func InitService(sConf ServiceConfig) {
 			"error": err.Error(),
 		}).Fatal("rbmq consumer: AnnounceQueue")
 	}
-	svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
+	go svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
 		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
 
 	svc.contentSent, err = svc.consumer.AnnounceQueue(
@@ -54,7 +55,7 @@ func InitService(sConf ServiceConfig) {
 		}).Fatal("rbmq consumer: AnnounceQueue")
 	}
 
-	svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
+	go svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
 		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
 
 	if err := initCQR(); err != nil {

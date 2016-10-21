@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
