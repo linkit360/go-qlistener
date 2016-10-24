@@ -1,10 +1,11 @@
 .PHONY: dev run release
 
 dev:
-	rm ./qlistener; go build ; ./qlistener;
+	rm ./qlistener; go build ;
+	export GEOIP_PATH="dev/GeoLite2-City.mmdb"; ./qlistener;
 
 run:
-	./qlistener
+	export GEOIP_PATH="dev/GeoLite2-City.mmdb"; ./qlistener
 
 release:
 	export GOOS=linux; export GOARCH=amd64; \

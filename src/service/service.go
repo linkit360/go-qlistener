@@ -225,7 +225,7 @@ type Subscription struct {
 func (s Subscription) key() string {
 	return fmt.Sprintf("%s-%d", s.Msisdn, s.ServiceId)
 }
-func (s Subscriptions) Reload() error {
+func (s *Subscriptions) Reload() error {
 	query := fmt.Sprintf("select id, msisdn, id_service from "+
 		"%ssubscriptions where status = $1", svc.sConfig.DbConf.TablePrefix)
 	rows, err := svc.db.Query(query, ACTIVE_STATUS)
