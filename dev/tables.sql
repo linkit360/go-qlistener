@@ -8,7 +8,15 @@ CREATE TABLE xmp_content_sent (
   id_content        INT NOT NULL DEFAULT 0,
   id_subscription   INT NOT NULL DEFAULT 0,
   operator_code     INT NOT NULL DEFAULT 0,
-  country_code      INT NOT NULL DEFAULT 0,
+  country_code      INT NOT NULL DEFAULT 0
+);
+
+CREATE TYPE user_action AS ENUM ('open', 'pull_click');
+CREATE TABLE xmp_user_actions (
+  id serial PRIMARY KEY,
+  tid  varchar(127) UNIQUE NOT NULL,
+  action user_action NOT NULL,
+  error varchar(511) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE xmp_access_campaign (
