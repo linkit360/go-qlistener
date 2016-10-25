@@ -199,9 +199,12 @@ type IpInfo struct {
 }
 
 func geoIp(ip string) (IpInfo, error) {
+	if ip == "" {
+		return IpInfo{}, errors.New("GeoIP Parse: Empty IP")
+	}
 	record, err := svc.ipDb.City(net.ParseIP(ip))
 	if err != nil {
-		return IpInfo{}, fmt.Errorf("GeoIP Parse City: %s", err.Error())
+		return IpInfo{}, fmt.Errorf("GeoIP Parse City: IP: %s: error: %s", ip, err.Error())
 	}
 	ipInfo := IpInfo{
 		Ip:                  ip,                         // => 81.2.69.142

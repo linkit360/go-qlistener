@@ -40,12 +40,13 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			}
 		}
 
-		ipInfo, errStr := geoIp(t.IP)
-		if errStr != nil {
+		ipInfo, err := geoIp(t.IP)
+		if err != nil {
 			log.WithFields(log.Fields{
-				"error": errStr.Error(),
+				"error": err.Error(),
 			}).Error("parse geo ip city, continued..")
 		}
+		err = nil
 
 		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
 			"msisdn, "+
@@ -80,10 +81,6 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $35, $36, $37, $38 )",
 			svc.sConfig.DbConf.TablePrefix)
 
-		s := ""
-		if t.Error != nil {
-			s = t.Error.Error()
-		}
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,
 			t.Tid,
@@ -96,7 +93,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			t.UrlPath,
 			t.Method,
 			t.Headers,
-			s,
+			t.Error,
 			t.CampaignId,
 			t.ServiceId,
 			t.ContentId,

@@ -19,7 +19,7 @@ CREATE TABLE xmp_user_actions (
   error varchar(511) NOT NULL DEFAULT ''
 );
 
-CREATE TABLE xmp_access_campaign (
+CREATE TABLE xmp_campaigns_access (
   id                          serial PRIMARY KEY,
   tid                         varchar(127) UNIQUE NOT NULL ,
   access_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -51,4 +51,4 @@ CREATE TABLE xmp_access_campaign (
   geoip_accuracy_radius       int NOT NULL DEFAULT 0
 );
 CREATE EXTENSION btree_gist;
-CREATE INDEX xmp_access_campaign_long_lat_gistidx ON xmp_access_campaign USING gist(geoip_longitude, geoip_latitude);
+CREATE INDEX xmp_campaigns_access_long_lat_gistidx ON xmp_campaigns_access USING gist(geoip_longitude, geoip_latitude);

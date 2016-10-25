@@ -6,18 +6,14 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
-)
 
-type UserActionNotify struct {
-	Tid    string `json:"tid"`
-	Error  string `json:"error"`
-	Action string `json:"tid"`
-}
+	"github.com/vostrok/dispatcherd/src/rbmq"
+)
 
 func userActions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 
-		var t UserActionNotify
+		var t rbmq.UserActionNotify
 		if err := json.Unmarshal(msg.Body, &t); err != nil {
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
