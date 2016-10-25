@@ -26,7 +26,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		if t.SubscriptionId == 0 {
 			s := Subscription{Msisdn: t.Msisdn, ServiceId: t.ServiceId}
 			var ok bool
-			t.SubscriptionId, ok = subscriptions.Map[s.key()]
+			t.SubscriptionId, ok = memSubscriptions.Map[s.key()]
 			if !ok {
 				// do not set id_subscriber: msisdn is enough
 				query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+

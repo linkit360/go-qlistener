@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
@@ -34,6 +33,7 @@ func InitService(sConf ServiceConfig) {
 		log.Fatal("rbmq connect: %s", err.Error())
 	}
 
+	// access campaign consumer
 	svc.accessCampaign, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
 	if err != nil {
@@ -45,6 +45,7 @@ func InitService(sConf ServiceConfig) {
 	go svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
 		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
 
+	// content sent consumer
 	svc.contentSent, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
 	if err != nil {
@@ -54,10 +55,22 @@ func InitService(sConf ServiceConfig) {
 			"error": err.Error(),
 		}).Fatal("rbmq consumer: AnnounceQueue")
 	}
-
 	go svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
 		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
 
+	// user actions consumer
+	svc.userActions, err = svc.consumer.AnnounceQueue(
+		sConf.Queue.UserActions, sConf.Queue.UserActions)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"queue": sConf.Queue.UserActions,
+			"error": err.Error(),
+		}).Fatal("rbmq consumer: AnnounceQueue")
+	}
+	go svc.consumer.Handle(svc.userActions, userActions, sConf.ThreadsCount,
+		sConf.Queue.UserActions, sConf.Queue.UserActions)
+
+	// CQR-s
 	if err := initCQR(); err != nil {
 		log.WithField("error", err.Error()).Fatal("Init CQR")
 	}
@@ -72,6 +85,7 @@ type Service struct {
 	consumer       *rabbit.Consumer
 	contentSent    <-chan amqp_driver.Delivery
 	accessCampaign <-chan amqp_driver.Delivery
+	userActions    <-chan amqp_driver.Delivery
 	ipDb           *geoip2.Reader
 	sConfig        ServiceConfig
 	tables         map[string]struct{}
@@ -79,6 +93,7 @@ type Service struct {
 type QueuesConfig struct {
 	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
 	ContentSent    string `default:"content_sent" yaml:"content_sent"`
+	UserActions    string `default:"user_actions" yaml:"user_actions"`
 }
 type ServiceConfig struct {
 	GeoIpPath    string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
@@ -90,7 +105,7 @@ type ServiceConfig struct {
 }
 
 func initCQR() error {
-	if err := subscriptions.Reload(); err != nil {
+	if err := memSubscriptions.Reload(); err != nil {
 		return fmt.Errorf("subscriptions.Reload: %s", err.Error())
 	}
 	svc.tables = make(map[string]struct{}, len(svc.sConfig.Tables))
@@ -152,9 +167,14 @@ func CQR(table string) (bool, error) {
 	// should we re-build service
 	switch {
 	case strings.Contains(table, "subscriptions"):
-		if err := subscriptions.Reload(); err != nil {
+		if err := memSubscriptions.Reload(); err != nil {
 			return false, fmt.Errorf("subscriptions.Reload: %s", err.Error())
 		}
+	case strings.Contains(table, "campaigns"):
+		if err := memCampaign.Reload(); err != nil {
+			return false, fmt.Errorf("memCampaign.Reload: %s", err.Error())
+		}
+
 	default:
 		return false, fmt.Errorf("CQR Request: Unknown table: %s", table)
 	}
@@ -201,62 +221,4 @@ func geoIp(ip string) (IpInfo, error) {
 		ipInfo.Subdivisions = record.Subdivisions[0].Names["en"] // => England
 	}
 	return ipInfo, nil
-}
-
-// msisdn _ service_id ==> subscription_id
-
-// Keep in memory all active campaigns
-// Allow to get a subscription_id by msisdn and service_id
-// Reload when changes to subscriptions made
-// usage:
-// subscripions_id, ok := subscripions.Map[ s.key() ]
-var subscriptions = &Subscriptions{}
-
-type Subscriptions struct {
-	sync.RWMutex
-	Map map[string]int64
-}
-type Subscription struct {
-	Msisdn         string
-	ServiceId      int64
-	SubscriptionId int64
-}
-
-func (s Subscription) key() string {
-	return fmt.Sprintf("%s-%d", s.Msisdn, s.ServiceId)
-}
-func (s *Subscriptions) Reload() error {
-	query := fmt.Sprintf("select id, msisdn, id_service from "+
-		"%ssubscriptions where status = $1", svc.sConfig.DbConf.TablePrefix)
-	rows, err := svc.db.Query(query, ACTIVE_STATUS)
-	if err != nil {
-		return fmt.Errorf("Subscriptions Query: %s, query: %s", err.Error(), query)
-	}
-	defer rows.Close()
-
-	var records []Subscription
-	for rows.Next() {
-		record := Subscription{}
-
-		if err := rows.Scan(
-			&record.SubscriptionId,
-			&record.Msisdn,
-			&record.ServiceId,
-		); err != nil {
-			return err
-		}
-		records = append(records, record)
-	}
-	if rows.Err() != nil {
-		return fmt.Errorf("Subscriptions Reload RowsError: %s", err.Error())
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
-	s.Map = make(map[string]int64, len(records))
-	for _, subscription := range records {
-		s.Map[subscription.key()] = subscription.SubscriptionId
-	}
-	return nil
 }

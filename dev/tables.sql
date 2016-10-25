@@ -11,7 +11,7 @@ CREATE TABLE xmp_content_sent (
   country_code      INT NOT NULL DEFAULT 0
 );
 
-CREATE TYPE user_action AS ENUM ('open', 'pull_click');
+CREATE TYPE user_action AS ENUM ('access', 'pull_click');
 CREATE TABLE xmp_user_actions (
   id serial PRIMARY KEY,
   tid  varchar(127) UNIQUE NOT NULL,
@@ -33,8 +33,7 @@ CREATE TABLE xmp_access_campaign (
   url_path                    varchar(511) NOT NULL DEFAULT '',
   method                      varchar(127) NOT NULL DEFAULT '',
   headers                     varchar(511) NOT NULL DEFAULT '',
-  content_error               boolean NOT NULL DEFAULT FALSE,
-  file_error                  boolean NOT NULL DEFAULT FALSE,
+  error                       varchar(511) NOT NULL DEFAULT '',
   id_campaign                 INT NOT NULL DEFAULT 0,
   id_service                  INT NOT NULL DEFAULT 0,
   id_content                  INT NOT NULL DEFAULT 0,

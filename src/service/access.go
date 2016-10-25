@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
+
 	"github.com/vostrok/dispatcherd/src/rbmq"
 )
 
@@ -22,11 +23,27 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Ack(false)
 			continue
 		}
-		ipInfo, err := geoIp(t.IP)
-		if err != nil {
+		logCtx := log.WithField("accessCampaign", t)
+		if t.CampaignHash == "" {
+			logCtx.Error("no campaign hash")
+		}
+		if t.Tid == "" {
+			logCtx.Error("no tid")
+		}
+		if t.CampaignId == 0 {
+			camp, ok := memCampaign.Map[t.CampaignHash]
+			if !ok {
+				logCtx.Error("unknown campaign hash")
+			} else {
+				t.CampaignId = camp.Id
+				t.ServiceId = camp.ServiceId
+			}
+		}
+
+		ipInfo, errStr := geoIp(t.IP)
+		if errStr != nil {
 			log.WithFields(log.Fields{
-				"error":          err.Error(),
-				"accessCampaign": t,
+				"error": errStr.Error(),
 			}).Error("parse geo ip city, continued..")
 		}
 
@@ -42,8 +59,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			"url_path, "+
 			"method, "+
 			"headers, "+
-			"content_error, "+
-			"file_error, "+
+			"error, "+
 			"id_campaign, "+
 			"id_service, "+
 			"id_content, "+
@@ -64,6 +80,10 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $35, $36, $37, $38 )",
 			svc.sConfig.DbConf.TablePrefix)
 
+		s := ""
+		if t.Error != nil {
+			s = t.Error.Error()
+		}
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,
 			t.Tid,
@@ -76,8 +96,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			t.UrlPath,
 			t.Method,
 			t.Headers,
-			t.ContentServiceError,
-			t.ContentFileError,
+			s,
 			t.CampaignId,
 			t.ServiceId,
 			t.ContentId,
