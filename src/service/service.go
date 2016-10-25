@@ -27,6 +27,16 @@ func InitService(sConf ServiceConfig) {
 
 	svc.db = db.Init(sConf.DbConf)
 	svc.sConfig = sConf
+	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
+	if err != nil {
+		log.WithField("error", err.Error()).Fatal("Init GeoIp")
+	}
+
+	svc.m = Metrics{
+		AccessCampaign: initAccessCampaignMetrics(),
+		ContentSent:    initContentSentMetrics(),
+		UserActions:    initUserActionsMetrics(),
+	}
 
 	svc.consumer = rabbit.NewConsumer(sConf.Consumer)
 	if err := svc.consumer.Connect(); err != nil {
@@ -74,10 +84,12 @@ func InitService(sConf ServiceConfig) {
 	if err := initCQR(); err != nil {
 		log.WithField("error", err.Error()).Fatal("Init CQR")
 	}
-	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
-	if err != nil {
-		log.WithField("error", err.Error()).Fatal("Init GeoIp")
-	}
+}
+
+type Metrics struct {
+	AccessCampaign AccessCampaignMetrics
+	ContentSent    ContentSentMetrics
+	UserActions    UserActionsMetrics
 }
 
 type Service struct {
@@ -89,6 +101,7 @@ type Service struct {
 	ipDb           *geoip2.Reader
 	sConfig        ServiceConfig
 	tables         map[string]struct{}
+	m              Metrics
 }
 type QueuesConfig struct {
 	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
