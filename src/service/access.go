@@ -30,6 +30,11 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		if t.Tid == "" {
 			logCtx.Error("no tid")
 		}
+		if t.UrlPath == "" && t.Tid == "" && t.CampaignHash == "" {
+			logCtx.Error("no urlpath, strange row, discarding")
+			msg.Ack(false)
+			continue
+		}
 		if t.CampaignId == 0 {
 			camp, ok := memCampaign.Map[t.CampaignHash]
 			if !ok {
@@ -52,7 +57,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			"msisdn, "+
 			"tid, "+
 			"ip, "+
-			"operator_code"+
+			"operator_code, "+
 			"country_code, "+
 			"supported, "+
 			"user_agent, "+
@@ -78,7 +83,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			"geoip_accuracy_radius "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,  "+
-			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $35, $36, $37, $38 )",
+			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)",
 			svc.sConfig.DbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,

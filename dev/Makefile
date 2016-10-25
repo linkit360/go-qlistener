@@ -1,4 +1,4 @@
-.PHONY: dev run release
+.PHONY: dev run release config
 
 dev:
 	rm ./qlistener; go build ;
@@ -14,3 +14,6 @@ release:
 send:
 		scp -i ~/.ssh/mobilink_centos.pem bin/qlistener-linux-amd64 centos@52.66.23.201:/home/centos/go/src/github.com/vostrok/qlistener/bin/qlistener-linux-amd64
 		scp -i ~/.ssh/mobilink_centos.pem dev/appconfig.yml centos@52.66.23.201:/home/centos/go/src/github.com/vostrok/qlistener/dev/
+
+config:
+	scp -i ~/.ssh/mobilink_centos.pem dev/appconfig.yml centos@52.66.23.201:/home/centos/go/src/github.com/vostrok/qlistener/dev/
