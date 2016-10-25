@@ -10,11 +10,17 @@ import (
 	"github.com/vostrok/dispatcherd/src/rbmq"
 )
 
+type EventNotifyAccessCampaign struct {
+	EventName string                    `json:"event_name,omitempty"`
+	EventData rbmq.AccessCampaignNotify `json:"event_data,omitempty"`
+}
+
 func accessCampaign(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		var t rbmq.AccessCampaignNotify
+		log.WithField("body", string(msg.Body)).Debug("start process")
 
-		if err := json.Unmarshal(msg.Body, &t); err != nil {
+		var e EventNotifyAccessCampaign
+		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			log.WithFields(log.Fields{
 				"error":          err.Error(),
 				"accessCampaign": string(msg.Body),
@@ -23,6 +29,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Ack(false)
 			continue
 		}
+		t := e.EventData
 		logCtx := log.WithField("accessCampaign", t)
 		if t.CampaignHash == "" {
 			logCtx.Error("no campaign hash")

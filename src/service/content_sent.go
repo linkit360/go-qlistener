@@ -9,11 +9,17 @@ import (
 	"github.com/vostrok/contentd/service"
 )
 
+type EventNotifyContentSent struct {
+	EventName string                        `json:"event_name,omitempty"`
+	EventData service.ContentSentProperties `json:"event_data,omitempty"`
+}
+
 func contentSent(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
+		log.WithField("body", string(msg.Body)).Debug("start process")
 
-		var t service.ContentSentProperties
-		if err := json.Unmarshal(msg.Body, &t); err != nil {
+		var e EventNotifyContentSent
+		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
 				"msg":         "dropped",
@@ -22,6 +28,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			msg.Ack(false)
 			continue
 		}
+		t := e.EventData
 
 		if t.SubscriptionId == 0 {
 			s := Subscription{Msisdn: t.Msisdn, ServiceId: t.ServiceId}

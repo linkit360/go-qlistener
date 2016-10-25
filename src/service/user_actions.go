@@ -10,11 +10,17 @@ import (
 	"github.com/vostrok/dispatcherd/src/rbmq"
 )
 
+type EventNotifyUserActions struct {
+	EventName string                 `json:"event_name,omitempty"`
+	EventData rbmq.UserActionsNotify `json:"event_data,omitempty"`
+}
+
 func userActions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
+		log.WithField("body", string(msg.Body)).Debug("start process")
 
-		var t rbmq.UserActionNotify
-		if err := json.Unmarshal(msg.Body, &t); err != nil {
+		var e EventNotifyUserActions
+		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
 				"msg":         "dropped",
@@ -24,6 +30,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
+		t := e.EventData
 		query := fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"tid, "+
 			"action, "+
