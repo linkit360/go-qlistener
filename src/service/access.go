@@ -38,7 +38,9 @@ type EventNotifyAccessCampaign struct {
 }
 
 func accessCampaign(deliveries <-chan amqp.Delivery) {
+
 	for msg := range deliveries {
+
 		log.WithField("body", string(msg.Body)).Debug("start process")
 
 		var e EventNotifyAccessCampaign
@@ -53,6 +55,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		t := e.EventData
+
 		logCtx := log.WithField("accessCampaign", t)
 		if t.CampaignHash == "" {
 			logCtx.Error("no campaign hash")
@@ -154,7 +157,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.AccuracyRadius,
 		); err != nil {
 			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"accessCampaign": t,
 				"error":          err.Error(),
 				"msg":            "requeue",
@@ -163,7 +166,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		svc.m.AccessCampaign.AccessCampaignCreateCount.Add(1)
-		log.WithFields(log.Fields{
+		logCtx.WithFields(log.Fields{
 			"accessCcampaign": t,
 		}).Info("processed successfully")
 		msg.Ack(false)

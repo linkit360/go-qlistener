@@ -35,7 +35,9 @@ type EventNotifyUserActions struct {
 
 func userActions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		log.WithField("body", string(msg.Body)).Debug("start process")
+		log.WithFields(log.Fields{
+			"body": string(msg.Body),
+		}).Debug("start process")
 
 		var e EventNotifyUserActions
 		if err := json.Unmarshal(msg.Body, &e); err != nil {

@@ -38,6 +38,7 @@ type EventNotifyContentSent struct {
 }
 
 func contentSent(deliveries <-chan amqp.Delivery) {
+
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
 

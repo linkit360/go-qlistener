@@ -23,13 +23,16 @@ const ACTIVE_STATUS = 1
 
 func InitService(sConf ServiceConfig) {
 	log.SetLevel(log.DebugLevel)
+
 	var err error
 
 	svc.db = db.Init(sConf.DbConf)
 	svc.sConfig = sConf
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
 	if err != nil {
-		log.WithField("error", err.Error()).Fatal("Init GeoIp")
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("geoip init")
 	}
 
 	svc.m = Metrics{
@@ -82,7 +85,9 @@ func InitService(sConf ServiceConfig) {
 
 	// CQR-s
 	if err := initCQR(); err != nil {
-		log.WithField("error", err.Error()).Fatal("Init CQR")
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("cqr init")
 	}
 }
 
@@ -114,12 +119,15 @@ type ServiceConfig struct {
 	Consumer     rabbit.ConsumerConfig `yaml:"consumer"`
 	Queue        QueuesConfig          `yaml:"queues"`
 	DbConf       db.DataBaseConfig     `yaml:"db"`
-	Tables       []string              `default:"subscriptions" yaml:"tables"`
+	Tables       []string              `yaml:"tables"`
 }
 
 func initCQR() error {
 	if err := memSubscriptions.Reload(); err != nil {
-		return fmt.Errorf("subscriptions.Reload: %s", err.Error())
+		return fmt.Errorf("memSubscriptions.Reload: %s", err.Error())
+	}
+	if err := memCampaign.Reload(); err != nil {
+		return fmt.Errorf("memCampaign.Reload: %s", err.Error())
 	}
 	svc.tables = make(map[string]struct{}, len(svc.sConfig.Tables))
 	for _, v := range svc.sConfig.Tables {
@@ -169,12 +177,16 @@ func Reload(c *gin.Context) {
 }
 func CQR(table string) (bool, error) {
 	if len(table) == 0 {
-		log.WithField("error", "No table name given").Errorf("CQR request")
+		log.WithFields(log.Fields{
+			"error": "No table name given",
+		}).Errorf("CQR request")
 		return false, nil
 	}
 	_, ok := svc.tables[table]
 	if !ok {
-		log.WithField("error", "table name doesn't match any").Errorf("CQR request")
+		log.WithFields(log.Fields{
+			"error": "table name doesn't match any",
+		}).Errorf("CQR request")
 		return false, nil
 	}
 	// should we re-build service

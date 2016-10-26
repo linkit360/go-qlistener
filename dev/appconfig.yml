@@ -33,3 +33,4 @@ service:
 
   tables:
   - subscriptions
+  - campaigns
