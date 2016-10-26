@@ -1,6 +1,6 @@
 CREATE TABLE xmp_content_sent (
   id                serial PRIMARY KEY,
-  tid               varchar(127) UNIQUE NOT NULL,
+  tid               varchar(127) NOT NULL DEFAULT '',
   sent_at           TIMESTAMP NOT NULL DEFAULT NOW(),
   msisdn            varchar(32) NOT NULL DEFAULT '',
   id_campaign       INT NOT NULL DEFAULT 0,
@@ -14,14 +14,14 @@ CREATE TABLE xmp_content_sent (
 CREATE TYPE user_action AS ENUM ('access', 'pull_click');
 CREATE TABLE xmp_user_actions (
   id serial PRIMARY KEY,
-  tid  varchar(127)  NOT NULL,
+  tid  varchar(127) NOT NULL DEFAULT '',
   action user_action NOT NULL,
   error varchar(511) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE xmp_campaigns_access (
   id                          serial PRIMARY KEY,
-  tid                         varchar(127)  NOT NULL ,
+  tid                         varchar(127) NOT NULL DEFAULT '',
   access_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
   msisdn                      varchar(32) NOT NULL DEFAULT '',
   ip                          varchar(32) NOT NULL DEFAULT 0,
