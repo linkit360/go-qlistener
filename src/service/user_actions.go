@@ -82,6 +82,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 			log.WithFields(log.Fields{
 				"userAction": t,
+				"query":      query,
 				"msg":        "requeue",
 				"error":      err.Error(),
 			}).Error("add user action")

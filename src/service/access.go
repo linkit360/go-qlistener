@@ -159,6 +159,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
 			logCtx.WithFields(log.Fields{
 				"accessCampaign": t,
+				"query":          query,
 				"error":          err.Error(),
 				"msg":            "requeue",
 			}).Error("add access campaign log failed")

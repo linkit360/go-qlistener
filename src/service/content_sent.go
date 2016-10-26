@@ -98,9 +98,9 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 					t.Price,
 				).Scan(&t.SubscriptionId); err != nil {
 					svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
-
 					log.WithFields(log.Fields{
 						"error":       err.Error(),
+						"query":       query,
 						"msg":         "requeue",
 						"contentSent": t,
 					}).Error("add new subscription for sentcontent")
@@ -119,17 +119,19 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
 			"msisdn, "+
+			"tid, "+
 			"id_campaign, "+
 			"id_service, "+
 			"id_subscription, "+
 			"id_content, "+
 			"country_code, "+
 			"operator_code "+
-			") values ($1, $2, $3, $4, $5, $6, $7)",
+			") values ($1, $2, $3, $4, $5, $6, $7, $8)",
 			svc.sConfig.DbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,
+			t.Tid,
 			t.CampaignId,
 			t.ServiceId,
 			t.SubscriptionId,
@@ -140,6 +142,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			svc.m.ContentSent.ContentSentCreateErrors.Add(1)
 			log.WithFields(log.Fields{
 				"contentSent": t,
+				"query":       query,
 				"msg":         "requeue",
 				"error":       err.Error(),
 			}).Error("add sent content")

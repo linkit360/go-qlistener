@@ -52,3 +52,12 @@ CREATE TABLE xmp_campaigns_access (
 );
 CREATE EXTENSION btree_gist;
 CREATE INDEX xmp_campaigns_access_long_lat_gistidx ON xmp_campaigns_access USING gist(geoip_longitude, geoip_latitude);
+
+
+ALTER TABLE xmp_subscriptions ADD COLUMN id_old INT ;
+UPDATE xmp_subscriptions SET id_old = id ;
+DROP INDEX public.xmp_subscriptions_pkey CASCADE;
+DROP INDEX public.xmp_subscriptions_id_uindex CASCADE;
+ALTER TABLE xmp_subscriptions DROP COLUMN id CASCADE ;
+ALTER TABLE xmp_subscriptions ADD COLUMN id SERIAL PRIMARY KEY ;
+ALTER SEQUENCE serial RESTART WITH max(id);
