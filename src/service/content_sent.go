@@ -72,46 +72,42 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		}
 
 		if t.SubscriptionId == 0 {
-			s := Subscription{Msisdn: t.Msisdn, ServiceId: t.ServiceId}
-			var ok bool
-			t.SubscriptionId, ok = memSubscriptions.Map[s.key()]
-			if !ok {
-				// do not set id_subscriber: msisdn is enough
-				query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+
-					"result, "+
-					"id_campaign, "+
-					"id_service, "+
-					"msisdn, "+
-					"tid, "+
-					"country_code, "+
-					"operator_code, "+
-					"price "+
-					") values ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
-					svc.sConfig.DbConf.TablePrefix)
+			// do not set id_subscriber: msisdn is enough
+			query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+
+				"result, "+
+				"id_campaign, "+
+				"id_service, "+
+				"msisdn, "+
+				"tid, "+
+				"country_code, "+
+				"operator_code, "+
+				"price "+
+				") values ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+				svc.sConfig.DbConf.TablePrefix)
 
-				if err := svc.db.QueryRow(query,
-					"",
-					t.CampaignId,
-					t.ServiceId,
-					t.Msisdn,
-					t.Tid,
-					t.CountryCode,
-					t.OperatorCode,
-					t.Price,
-				).Scan(&t.SubscriptionId); err != nil {
-					svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
-					log.WithFields(log.Fields{
-						"error":       err.Error(),
-						"query":       query,
-						"msg":         "requeue",
-						"contentSent": t,
-					}).Error("add new subscription for sentcontent")
-					msg.Nack(false, true)
-					continue
-				}
-				svc.m.ContentSent.SubscriptionCreateCount.Add(1)
+			if err := svc.db.QueryRow(query,
+				"",
+				t.CampaignId,
+				t.ServiceId,
+				t.Msisdn,
+				t.Tid,
+				t.CountryCode,
+				t.OperatorCode,
+				t.Price,
+			).Scan(&t.SubscriptionId); err != nil {
+				svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
+				log.WithFields(log.Fields{
+					"error":       err.Error(),
+					"query":       query,
+					"msg":         "requeue",
+					"contentSent": t,
+				}).Error("add new subscription for sentcontent")
+				msg.Nack(false, true)
+				continue
 			}
+			svc.m.ContentSent.SubscriptionCreateCount.Add(1)
 		}
+
 		if t.SubscriptionId == 0 {
 			log.WithFields(log.Fields{
 				"error":       "UNEXPECTED CODE REACHED",
