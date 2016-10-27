@@ -32,7 +32,7 @@ CREATE TABLE xmp_campaigns_access (
   referer                     varchar(511) NOT NULL DEFAULT '',
   url_path                    varchar(511) NOT NULL DEFAULT '',
   method                      varchar(127) NOT NULL DEFAULT '',
-  headers                     varchar(2047) NOT NULL DEFAULT '',
+  headers                     VARCHAR(2047) NOT NULL DEFAULT '',
   error                       varchar(511) NOT NULL DEFAULT '',
   id_campaign                 INT NOT NULL DEFAULT 0,
   id_service                  INT NOT NULL DEFAULT 0,
@@ -52,13 +52,3 @@ CREATE TABLE xmp_campaigns_access (
 );
 CREATE EXTENSION btree_gist;
 CREATE INDEX xmp_campaigns_access_long_lat_gistidx ON xmp_campaigns_access USING gist(geoip_longitude, geoip_latitude);
-
-
-ALTER TABLE xmp_subscriptions ADD COLUMN id_old INT ;
-UPDATE xmp_subscriptions SET id_old = id ;
-DROP INDEX public.xmp_subscriptions_pkey CASCADE;
-DROP INDEX public.xmp_subscriptions_id_uindex CASCADE;
-ALTER TABLE xmp_subscriptions DROP COLUMN id CASCADE ;
-ALTER TABLE xmp_subscriptions ADD COLUMN id SERIAL PRIMARY KEY ;
-ALTER SEQUENCE serial RESTART WITH max(id);
-ALTER TABLE xmp_subscriptions DROP COLUMN id_old CASCADE;

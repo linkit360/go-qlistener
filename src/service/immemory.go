@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -29,8 +30,11 @@ func (s Subscription) key() string {
 }
 func (s *Subscriptions) Reload() error {
 	query := fmt.Sprintf("select id, msisdn, id_service from "+
-		"%ssubscriptions where status = $1", svc.sConfig.DbConf.TablePrefix)
-	rows, err := svc.db.Query(query, ACTIVE_STATUS)
+		"%ssubscriptions "+
+		"WHERE created_at > (CURRENT_TIMESTAMP - "+
+		strconv.Itoa(svc.sConfig.SubscriptionsLoadDays)+
+		" * INTERVAL '1 day' ) ", svc.sConfig.DbConf.TablePrefix)
+	rows, err := svc.db.Query(query)
 	if err != nil {
 		return fmt.Errorf("Subscriptions Query: %s, query: %s", err.Error(), query)
 	}

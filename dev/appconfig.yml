@@ -8,6 +8,7 @@ newrelic:
 service:
   geoip_path: /home/centos/go/src/github.com/vostrok/qlistener/dev/GeoLite2-City.mmdb
   threads_count: 1
+  subscriptions_load_days: 5
 
   consumer:
     uri: amqp://linkit:dg-U_oHhy7-@52.66.23.201:5672

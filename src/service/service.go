@@ -114,12 +114,13 @@ type QueuesConfig struct {
 	UserActions    string `default:"user_actions" yaml:"user_actions"`
 }
 type ServiceConfig struct {
-	GeoIpPath    string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	ThreadsCount int                   `default:"1" yaml:"threads_count"`
-	Consumer     rabbit.ConsumerConfig `yaml:"consumer"`
-	Queue        QueuesConfig          `yaml:"queues"`
-	DbConf       db.DataBaseConfig     `yaml:"db"`
-	Tables       []string              `yaml:"tables"`
+	GeoIpPath             string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	ThreadsCount          int                   `default:"1" yaml:"threads_count"`
+	Consumer              rabbit.ConsumerConfig `yaml:"consumer"`
+	Queue                 QueuesConfig          `yaml:"queues"`
+	DbConf                db.DataBaseConfig     `yaml:"db"`
+	Tables                []string              `yaml:"tables"`
+	SubscriptionsLoadDays int                   `default:"10" yaml:"subscriptions_load_days"`
 }
 
 func initCQR() error {
