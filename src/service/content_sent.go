@@ -82,10 +82,11 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 					"id_campaign, "+
 					"id_service, "+
 					"msisdn, "+
+					"tid, "+
 					"country_code, "+
 					"operator_code, "+
 					"price "+
-					") values ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+					") values ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
 					svc.sConfig.DbConf.TablePrefix)
 
 				if err := svc.db.QueryRow(query,
@@ -93,6 +94,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 					t.CampaignId,
 					t.ServiceId,
 					t.Msisdn,
+					t.Tid,
 					t.CountryCode,
 					t.OperatorCode,
 					t.Price,
