@@ -3,6 +3,10 @@ package service
 import (
 	"fmt"
 	"sync"
+	"time"
+
+	"database/sql"
+	log "github.com/Sirupsen/logrus"
 )
 
 // Tasks:
@@ -21,12 +25,27 @@ type Campaign struct {
 	ServiceId int64
 }
 
-func (s *Campaigns) Reload() error {
+func (s *Campaigns) Reload() (err error) {
+	log.WithFields(log.Fields{}).Debug("campaigns reload...")
+	begin := time.Now()
+	defer func(err error) {
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		log.WithFields(log.Fields{
+			"error": errStr,
+			"took":  time.Since(begin),
+		}).Debug("campaigns reload")
+	}(err)
+
 	query := fmt.Sprintf("select id, hash, service_id_1 from %scampaigns where status = $1",
 		svc.sConfig.DbConf.TablePrefix)
-	rows, err := svc.db.Query(query, ACTIVE_STATUS)
+	var rows *sql.Rows
+	rows, err = svc.db.Query(query, ACTIVE_STATUS)
 	if err != nil {
-		return fmt.Errorf("QueryServices: %s, query: %s", err.Error(), query)
+		err = fmt.Errorf("db.Query: %s, query: %s", err.Error(), query)
+		return
 	}
 	defer rows.Close()
 
@@ -34,17 +53,19 @@ func (s *Campaigns) Reload() error {
 	for rows.Next() {
 		record := Campaign{}
 
-		if err := rows.Scan(
+		if err = rows.Scan(
 			&record.Id,
 			&record.Hash,
 			&record.ServiceId,
 		); err != nil {
-			return err
+			err = fmt.Errorf("rows.Scan: %s", err.Error())
+			return
 		}
 		records = append(records, record)
 	}
 	if rows.Err() != nil {
-		return fmt.Errorf("RowsError: %s", err.Error())
+		err = fmt.Errorf("rows.Err: %s", err.Error())
+		return
 	}
 
 	s.Lock()
