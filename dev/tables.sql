@@ -16,7 +16,8 @@ CREATE TABLE xmp_user_actions (
   id serial PRIMARY KEY,
   tid  varchar(127) NOT NULL DEFAULT '',
   action user_action NOT NULL,
-  error varchar(511) NOT NULL DEFAULT ''
+  error varchar(511) NOT NULL DEFAULT '',
+  access_at                   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE xmp_campaigns_access (
