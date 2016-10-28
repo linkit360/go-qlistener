@@ -18,3 +18,7 @@ send:
 
 config:
 	scp -i ~/.ssh/mobilink_centos.pem dev/appconfig.yml centos@52.66.23.201:/home/centos/go/src/github.com/vostrok/qlistener/dev/
+
+
+cqrcampaigns:
+	curl http://localhost:50304/cqr?t=campaigns
