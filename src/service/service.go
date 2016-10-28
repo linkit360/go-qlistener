@@ -124,9 +124,6 @@ type ServiceConfig struct {
 }
 
 func initCQR() error {
-	if err := memSubscriptions.Reload(); err != nil {
-		return fmt.Errorf("memSubscriptions.Reload: %s", err.Error())
-	}
 	if err := memCampaign.Reload(); err != nil {
 		return fmt.Errorf("memCampaign.Reload: %s", err.Error())
 	}
@@ -192,10 +189,6 @@ func CQR(table string) (bool, error) {
 	}
 	// should we re-build service
 	switch {
-	case strings.Contains(table, "subscriptions"):
-		if err := memSubscriptions.Reload(); err != nil {
-			return false, fmt.Errorf("subscriptions.Reload: %s", err.Error())
-		}
 	case strings.Contains(table, "campaigns"):
 		if err := memCampaign.Reload(); err != nil {
 			return false, fmt.Errorf("memCampaign.Reload: %s", err.Error())

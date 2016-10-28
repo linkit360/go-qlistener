@@ -33,5 +33,4 @@ service:
     table_prefix: xmp_
 
   tables:
-  - subscriptions
   - campaigns
