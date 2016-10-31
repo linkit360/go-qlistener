@@ -67,9 +67,9 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			svc.m.AccessCampaign.Dropped.Add(1)
 			svc.m.AccessCampaign.Empty.Add(1)
 			logCtx.WithFields(log.Fields{
-				"error":       "Empty message",
-				"msg":         "dropped",
-				"contentSent": string(msg.Body),
+				"error": "Empty message",
+				"msg":   "dropped",
+				"tid":   t.Tid,
 			}).Error("no urlpath, strange row, discarding")
 			msg.Ack(false)
 			continue
@@ -89,6 +89,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		if err != nil {
 			svc.m.AccessCampaign.ErrorsParseGeoIp.Add(1)
 			log.WithFields(log.Fields{
+				"tid":   t.Tid,
 				"error": err.Error(),
 			}).Error("parse geo ip city, continued..")
 		}
@@ -158,17 +159,17 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		); err != nil {
 			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
 			logCtx.WithFields(log.Fields{
-				"error":          err.Error(),
-				"msg":            "requeue",
-				"query":          query,
-				"accessCampaign": t,
+				"tid":   t.Tid,
+				"error": err.Error(),
+				"msg":   "requeue",
+				"query": query,
 			}).Error("add access campaign log failed")
 			msg.Nack(false, true)
 			continue
 		}
 		svc.m.AccessCampaign.AccessCampaignCreateCount.Add(1)
 		logCtx.WithFields(log.Fields{
-			"accessCcampaign": t,
+			"tid": t.Tid,
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}

@@ -81,8 +81,10 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				"tid, "+
 				"country_code, "+
 				"operator_code, "+
+				"paid_hours, "+
+				"delay_hours, "+
 				"price "+
-				") values ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
 				svc.sConfig.DbConf.TablePrefix)
 
 			if err := svc.db.QueryRow(query,
@@ -93,25 +95,30 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				t.Tid,
 				t.CountryCode,
 				t.OperatorCode,
+				t.PaidHours,
+				t.DelayHours,
 				t.Price,
 			).Scan(&t.SubscriptionId); err != nil {
 				svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
 				log.WithFields(log.Fields{
-					"error":       err.Error(),
-					"query":       query,
-					"msg":         "requeue",
-					"contentSent": t,
+					"tid":   t.Tid,
+					"error": err.Error(),
+					"query": query,
+					"msg":   "requeue",
 				}).Error("add new subscription for sentcontent")
 				msg.Nack(false, true)
 				continue
 			}
+			log.WithFields(log.Fields{
+				"tid": t.Tid,
+			}).Info("added new subscription")
 			svc.m.ContentSent.SubscriptionCreateCount.Add(1)
 		}
 
 		if t.SubscriptionId == 0 {
 			log.WithFields(log.Fields{
-				"error":       "UNEXPECTED CODE REACHED",
-				"contentSent": t,
+				"tid":   t.Tid,
+				"error": "UNEXPECTED CODE REACHED",
 			}).Error("add content sent")
 		}
 
@@ -139,10 +146,10 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		); err != nil {
 			svc.m.ContentSent.ContentSentCreateErrors.Add(1)
 			log.WithFields(log.Fields{
-				"contentSent": t,
-				"query":       query,
-				"msg":         "requeue",
-				"error":       err.Error(),
+				"tid":   t.Tid,
+				"query": query,
+				"msg":   "requeue",
+				"error": err.Error(),
 			}).Error("add sent content")
 			msg.Nack(false, true)
 			continue
@@ -150,7 +157,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 
 		svc.m.ContentSent.ContentSentCreateCount.Add(1)
 		log.WithFields(log.Fields{
-			"contentSent": t,
+			"tid": t.Tid,
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}

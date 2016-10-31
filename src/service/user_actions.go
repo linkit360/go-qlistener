@@ -81,10 +81,10 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			svc.m.UserActions.UserActionsCreateDBErrors.Add(1)
 
 			log.WithFields(log.Fields{
-				"userAction": t,
-				"query":      query,
-				"msg":        "requeue",
-				"error":      err.Error(),
+				"tid":   t.Tid,
+				"query": query,
+				"msg":   "requeue",
+				"error": err.Error(),
 			}).Error("add user action")
 			msg.Nack(false, true)
 			continue
@@ -92,7 +92,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 		svc.m.UserActions.UserActionsCreateCount.Add(1)
 		log.WithFields(log.Fields{
-			"userAction": t,
+			"tid": t.Tid,
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}
