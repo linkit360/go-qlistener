@@ -10,21 +10,22 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
+	"time"
 )
 
 type UserActionsMetrics struct {
-	Dropped                   metrics.Counter
-	Empty                     metrics.Counter
-	UserActionsCreateCount    metrics.Counter
-	UserActionsCreateDBErrors metrics.Counter
+	Dropped                   metrics.Gauge
+	Empty                     metrics.Gauge
+	UserActionsCreateCount    metrics.Gauge
+	UserActionsCreateDBErrors metrics.Gauge
 }
 
 func initUserActionsMetrics() UserActionsMetrics {
 	return UserActionsMetrics{
-		Dropped: expvar.NewCounter("dropped_user_actions"),
-		Empty:   expvar.NewCounter("empty_user_actions"),
-		UserActionsCreateCount:    expvar.NewCounter("user_actions_count"),
-		UserActionsCreateDBErrors: expvar.NewCounter("user_actions_db_errors"),
+		Dropped: expvar.NewGauge("dropped_user_actions"),
+		Empty:   expvar.NewGauge("empty_user_actions"),
+		UserActionsCreateCount:    expvar.NewGauge("user_actions_count"),
+		UserActionsCreateDBErrors: expvar.NewGauge("user_actions_db_errors"),
 	}
 }
 
@@ -34,6 +35,16 @@ type EventNotifyUserActions struct {
 }
 
 func userActions(deliveries <-chan amqp.Delivery) {
+
+	go func() {
+		for range time.Tick(time.Second) {
+			svc.m.UserActions.Dropped.Set(0)
+			svc.m.UserActions.Empty.Set(0)
+			svc.m.UserActions.UserActionsCreateCount.Set(0)
+			svc.m.UserActions.UserActionsCreateDBErrors.Set(0)
+		}
+	}()
+
 	for msg := range deliveries {
 		log.WithFields(log.Fields{
 			"body": string(msg.Body),

@@ -43,7 +43,7 @@ func InitService(sConf ServiceConfig) {
 
 	svc.consumer = rabbit.NewConsumer(sConf.Consumer)
 	if err := svc.consumer.Connect(); err != nil {
-		log.Fatal("rbmq connect: %s", err.Error())
+		log.Fatal("rbmq connect: ", err.Error())
 	}
 
 	// access campaign consumer

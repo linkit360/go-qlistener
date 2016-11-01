@@ -12,14 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/vostrok/qlistener/src/config"
-	"github.com/vostrok/qlistener/src/metrics"
 	"github.com/vostrok/qlistener/src/newrelic"
 	"github.com/vostrok/qlistener/src/service"
 )
 
 func RunServer() {
 	appConfig := config.LoadConfig()
-	metrics.Init()
 	newrelic.Init(appConfig.NewRelic)
 	service.InitService(appConfig.Service)
 

@@ -10,25 +10,26 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
+	"time"
 )
 
 type AccessCampaignMetrics struct {
-	Dropped                      metrics.Counter
-	Empty                        metrics.Counter
-	UnknownCampaignHash          metrics.Counter
-	ErrorsParseGeoIp             metrics.Counter
-	AccessCampaignCreateCount    metrics.Counter
-	AccessCampaignCreateDBErrors metrics.Counter
+	Dropped                      metrics.Gauge
+	Empty                        metrics.Gauge
+	UnknownCampaignHash          metrics.Gauge
+	ErrorsParseGeoIp             metrics.Gauge
+	AccessCampaignCreateCount    metrics.Gauge
+	AccessCampaignCreateDBErrors metrics.Gauge
 }
 
 func initAccessCampaignMetrics() AccessCampaignMetrics {
 	return AccessCampaignMetrics{
-		Dropped:                      expvar.NewCounter("dropped_access_campaign"),
-		Empty:                        expvar.NewCounter("empty_access_campaign"),
-		UnknownCampaignHash:          expvar.NewCounter("access_campaign_unknown_hash"),
-		ErrorsParseGeoIp:             expvar.NewCounter("access_campaign_parse_geoip_errors"),
-		AccessCampaignCreateCount:    expvar.NewCounter("access_campaign_create_count"),
-		AccessCampaignCreateDBErrors: expvar.NewCounter("access_campaign_create_db_errors"),
+		Dropped:                      expvar.NewGauge("dropped_access_campaign"),
+		Empty:                        expvar.NewGauge("empty_access_campaign"),
+		UnknownCampaignHash:          expvar.NewGauge("access_campaign_unknown_hash"),
+		ErrorsParseGeoIp:             expvar.NewGauge("access_campaign_parse_geoip_errors"),
+		AccessCampaignCreateCount:    expvar.NewGauge("access_campaign_create_count"),
+		AccessCampaignCreateDBErrors: expvar.NewGauge("access_campaign_create_db_errors"),
 	}
 }
 
@@ -38,6 +39,17 @@ type EventNotifyAccessCampaign struct {
 }
 
 func accessCampaign(deliveries <-chan amqp.Delivery) {
+
+	go func() {
+		for range time.Tick(time.Second) {
+			svc.m.AccessCampaign.Dropped.Set(0)
+			svc.m.AccessCampaign.Empty.Set(0)
+			svc.m.AccessCampaign.UnknownCampaignHash.Set(0)
+			svc.m.AccessCampaign.ErrorsParseGeoIp.Set(0)
+			svc.m.AccessCampaign.AccessCampaignCreateCount.Set(0)
+			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Set(0)
+		}
+	}()
 
 	for msg := range deliveries {
 

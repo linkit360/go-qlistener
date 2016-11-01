@@ -10,25 +10,26 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/contentd/service"
+	"time"
 )
 
 type ContentSentMetrics struct {
-	Dropped                  metrics.Counter
-	Empty                    metrics.Counter
-	SubscriptionCreateErrors metrics.Counter
-	SubscriptionCreateCount  metrics.Counter
-	ContentSentCreateCount   metrics.Counter
-	ContentSentCreateErrors  metrics.Counter
+	Dropped                  metrics.Gauge
+	Empty                    metrics.Gauge
+	SubscriptionCreateErrors metrics.Gauge
+	SubscriptionCreateCount  metrics.Gauge
+	ContentSentCreateCount   metrics.Gauge
+	ContentSentCreateErrors  metrics.Gauge
 }
 
 func initContentSentMetrics() ContentSentMetrics {
 	return ContentSentMetrics{
-		Dropped: expvar.NewCounter("dropped_content_sent"),
-		Empty:   expvar.NewCounter("empty_content_sent"),
-		SubscriptionCreateErrors: expvar.NewCounter("content_sent_subscription_create_count"),
-		SubscriptionCreateCount:  expvar.NewCounter("content_sent_subscription_create_errors"),
-		ContentSentCreateCount:   expvar.NewCounter("content_sent_create_count"),
-		ContentSentCreateErrors:  expvar.NewCounter("content_sent_create_errors"),
+		Dropped: expvar.NewGauge("dropped_content_sent"),
+		Empty:   expvar.NewGauge("empty_content_sent"),
+		SubscriptionCreateErrors: expvar.NewGauge("content_sent_subscription_create_count"),
+		SubscriptionCreateCount:  expvar.NewGauge("content_sent_subscription_create_errors"),
+		ContentSentCreateCount:   expvar.NewGauge("content_sent_create_count"),
+		ContentSentCreateErrors:  expvar.NewGauge("content_sent_create_errors"),
 	}
 }
 
@@ -38,6 +39,17 @@ type EventNotifyContentSent struct {
 }
 
 func contentSent(deliveries <-chan amqp.Delivery) {
+
+	go func() {
+		for range time.Tick(time.Second) {
+			svc.m.ContentSent.Dropped.Set(0)
+			svc.m.ContentSent.Empty.Set(0)
+			svc.m.ContentSent.SubscriptionCreateErrors.Set(0)
+			svc.m.ContentSent.SubscriptionCreateCount.Set(0)
+			svc.m.ContentSent.ContentSentCreateCount.Set(0)
+			svc.m.ContentSent.ContentSentCreateErrors.Set(0)
+		}
+	}()
 
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
@@ -71,8 +83,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
+		// do not set id_subscriber: msisdn is enough
 		if t.SubscriptionId == 0 {
-			// do not set id_subscriber: msisdn is enough
 			query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+
 				"result, "+
 				"id_campaign, "+
