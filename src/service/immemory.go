@@ -40,7 +40,7 @@ func (s *Campaigns) Reload() (err error) {
 	}(err)
 
 	query := fmt.Sprintf("select id, hash, service_id_1 from %scampaigns where status = $1",
-		svc.sConfig.DbConf.TablePrefix)
+		svc.dbConf.TablePrefix)
 	var rows *sql.Rows
 	rows, err = svc.db.Query(query, ACTIVE_STATUS)
 	if err != nil {

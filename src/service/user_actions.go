@@ -82,7 +82,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			"action, "+
 			"error "+
 			") values ($1, $2, $3)",
-			svc.sConfig.DbConf.TablePrefix)
+			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.Tid,

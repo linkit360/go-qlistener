@@ -7,20 +7,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/configor"
 
+	"github.com/vostrok/db"
 	"github.com/vostrok/qlistener/src/service"
+	"github.com/vostrok/rabbit"
 )
 
 type ServerConfig struct {
 	Port string `default:"50304"`
 }
-type NewRelicConfig struct {
-	AppName string `default:"dev.qlistener.linkit360.com"`
-	License string `default:"4d635427ad90ca786ca2db6aa246ed651730b933"`
-}
 type AppConfig struct {
 	Server   ServerConfig          `yaml:"server"`
-	NewRelic NewRelicConfig        `yaml:"newrelic"`
 	Service  service.ServiceConfig `yaml:"service"`
+	Consumer rabbit.ConsumerConfig `yaml:"consumer"`
+	DbConf   db.DataBaseConfig     `yaml:"db"`
 }
 
 func LoadConfig() AppConfig {
@@ -35,7 +34,7 @@ func LoadConfig() AppConfig {
 	}
 
 	appConfig.Server.Port = envString("PORT", appConfig.Server.Port)
-	appConfig.Service.Consumer.Uri = envString("RBMQ_URL", appConfig.Service.Consumer.Uri)
+	appConfig.Consumer.Connection.Host = envString("RBMQ_HOST", appConfig.Consumer.Connection.Host)
 
 	appConfig.Service.GeoIpPath = envString("GEOIP_PATH", appConfig.Service.GeoIpPath)
 

@@ -97,7 +97,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				"delay_hours, "+
 				"price "+
 				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
-				svc.sConfig.DbConf.TablePrefix)
+				svc.dbConf.TablePrefix)
 
 			if err := svc.db.QueryRow(query,
 				"",
@@ -144,7 +144,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			"country_code, "+
 			"operator_code "+
 			") values ($1, $2, $3, $4, $5, $6, $7, $8)",
-			svc.sConfig.DbConf.TablePrefix)
+			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,

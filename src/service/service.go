@@ -21,13 +21,14 @@ var svc Service
 
 const ACTIVE_STATUS = 1
 
-func InitService(sConf ServiceConfig) {
+func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit.ConsumerConfig) {
 	log.SetLevel(log.DebugLevel)
 
 	var err error
 
-	svc.db = db.Init(sConf.DbConf)
+	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf
+	svc.dbConf = dbConf
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -41,7 +42,7 @@ func InitService(sConf ServiceConfig) {
 		UserActions:    initUserActionsMetrics(),
 	}
 
-	svc.consumer = rabbit.NewConsumer(sConf.Consumer)
+	svc.consumer = rabbit.NewConsumer(notifConf)
 	if err := svc.consumer.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
@@ -105,6 +106,7 @@ type Service struct {
 	userActions    <-chan amqp_driver.Delivery
 	ipDb           *geoip2.Reader
 	sConfig        ServiceConfig
+	dbConf         db.DataBaseConfig
 	tables         map[string]struct{}
 	m              Metrics
 }
@@ -114,13 +116,11 @@ type QueuesConfig struct {
 	UserActions    string `default:"user_actions" yaml:"user_actions"`
 }
 type ServiceConfig struct {
-	GeoIpPath             string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	ThreadsCount          int                   `default:"1" yaml:"threads_count"`
-	Consumer              rabbit.ConsumerConfig `yaml:"consumer"`
-	Queue                 QueuesConfig          `yaml:"queues"`
-	DbConf                db.DataBaseConfig     `yaml:"db"`
-	Tables                []string              `yaml:"tables"`
-	SubscriptionsLoadDays int                   `default:"10" yaml:"subscriptions_load_days"`
+	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	SubscriptionsLoadDays int          `default:"10" yaml:"subscriptions_load_days"`
+	ThreadsCount          int          `default:"1" yaml:"threads_count"`
+	Queue                 QueuesConfig `yaml:"queue"`
+	Tables                []string     `yaml:"tables"`
 }
 
 func initCQR() error {
