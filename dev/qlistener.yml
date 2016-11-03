@@ -1,8 +1,8 @@
-server: #
+server: #linkit-mobilink.cb2q7f7mvbwr.ap-south-1.rds.amazonaws.com
   port: 50304
 
 service:
-  geoip_path: /home/centos/go/src/github.com/vostrok/qlistener/dev/GeoLite2-City.mmdb
+  geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   threads_count: 1
   subscriptions_load_days: 5
   tables:
@@ -12,7 +12,7 @@ consumer:
   conn:
       user: linkit
       pass: dg-U_oHhy7-
-      host: linkit-mobilink.cb2q7f7mvbwr.ap-south-1.rds.amazonaws.com
+      host: localhost
       port: 5672
   queue_prefetch_count: 4
   binding_key: ""
@@ -27,11 +27,11 @@ db:
   conn_ttl: -1
   max_conns: 15
   timeout: 30
-  name: linkit_mobilink
-  user: linkit_mobilink
-  pass: A0kZN8pUAs63wePezz
+  name: linkit_dev
+  user: linkit
+  pass: E0kZN8pUAs63wePepf
   port: 5432
-  host: linkit-mobilink.cb2q7f7mvbwr.ap-south-1.rds.amazonaws.com
+  host: linkit.cz3twmoynbq5.eu-central-1.rds.amazonaws.com
   ssl_mode: disable
   table_prefix: xmp_
 
