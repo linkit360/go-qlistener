@@ -90,6 +90,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				"id_campaign, "+
 				"id_service, "+
 				"msisdn, "+
+				"publisher, "+
+				"pixel, "+
 				"tid, "+
 				"country_code, "+
 				"operator_code, "+
@@ -104,6 +106,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				t.CampaignId,
 				t.ServiceId,
 				t.Msisdn,
+				t.Publisher,
+				t.Pixel,
 				t.Tid,
 				t.CountryCode,
 				t.OperatorCode,
