@@ -345,6 +345,7 @@ CREATE TABLE xmp_publishers_attributes
 CREATE TABLE xmp_retries
 (
   id SERIAL PRIMARY KEY NOT NULL,
+  tid varchar(127) NOT NULL DEFAULT '',
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   last_pay_attempt_at TIMESTAMP DEFAULT now() NOT NULL,
   attempts_count INTEGER DEFAULT 1 NOT NULL,
