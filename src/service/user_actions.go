@@ -52,7 +52,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 		var e EventNotifyUserActions
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			svc.m.UserActions.Dropped.Add(1)
+			//svc.m.UserActions.Dropped.Add(1)
 
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
@@ -65,8 +65,8 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 		t := e.EventData
 		if t.Tid == "" || t.Action == "" {
-			svc.m.UserActions.Dropped.Add(1)
-			svc.m.UserActions.Empty.Add(1)
+			//svc.m.UserActions.Dropped.Add(1)
+			//svc.m.UserActions.Empty.Add(1)
 
 			log.WithFields(log.Fields{
 				"error":      "Empty message",
@@ -89,7 +89,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			t.Action,
 			t.Error,
 		); err != nil {
-			svc.m.UserActions.UserActionsCreateDBErrors.Add(1)
+			//svc.m.UserActions.UserActionsCreateDBErrors.Add(1)
 
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
@@ -101,9 +101,10 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		svc.m.UserActions.UserActionsCreateCount.Add(1)
+		//svc.m.UserActions.UserActionsCreateCount.Add(1)
 		log.WithFields(log.Fields{
-			"tid": t.Tid,
+			"tid":   t.Tid,
+			"queue": "user_actions",
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}

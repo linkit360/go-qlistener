@@ -56,7 +56,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 
 		var e EventNotifyContentSent
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			svc.m.ContentSent.Dropped.Add(1)
+			//svc.m.ContentSent.Dropped.Add(1)
 
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
@@ -71,8 +71,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
 			t.ContentId == 0 {
-			svc.m.ContentSent.Dropped.Add(1)
-			svc.m.ContentSent.Empty.Add(1)
+			//svc.m.ContentSent.Dropped.Add(1)
+			//svc.m.ContentSent.Empty.Add(1)
 
 			log.WithFields(log.Fields{
 				"error":       "Empty message",
@@ -98,7 +98,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				"paid_hours, "+
 				"delay_hours, "+
 				"price "+
-				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
+				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) "+
+				"RETURNING id",
 				svc.dbConf.TablePrefix)
 
 			if err := svc.db.QueryRow(query,
@@ -115,7 +116,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				t.DelayHours,
 				t.Price,
 			).Scan(&t.SubscriptionId); err != nil {
-				svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
+				//svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
 				log.WithFields(log.Fields{
 					"tid":   t.Tid,
 					"error": err.Error(),
@@ -128,7 +129,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			log.WithFields(log.Fields{
 				"tid": t.Tid,
 			}).Info("added new subscription")
-			svc.m.ContentSent.SubscriptionCreateCount.Add(1)
+			//svc.m.ContentSent.SubscriptionCreateCount.Add(1)
 		}
 
 		if t.SubscriptionId == 0 {
@@ -160,7 +161,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			svc.m.ContentSent.ContentSentCreateErrors.Add(1)
+			//svc.m.ContentSent.ContentSentCreateErrors.Add(1)
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"query": query,
@@ -171,9 +172,10 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		svc.m.ContentSent.ContentSentCreateCount.Add(1)
+		//svc.m.ContentSent.ContentSentCreateCount.Add(1)
 		log.WithFields(log.Fields{
-			"tid": t.Tid,
+			"tid":   t.Tid,
+			"queue": "content_sent",
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}

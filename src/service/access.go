@@ -57,7 +57,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 
 		var e EventNotifyAccessCampaign
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			svc.m.AccessCampaign.Dropped.Add(1)
+			//svc.m.AccessCampaign.Dropped.Add(1)
 			log.WithFields(log.Fields{
 				"error":          err.Error(),
 				"accessCampaign": string(msg.Body),
@@ -76,8 +76,8 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			logCtx.Error("no tid")
 		}
 		if t.UrlPath == "" && t.Tid == "" && t.CampaignHash == "" {
-			svc.m.AccessCampaign.Dropped.Add(1)
-			svc.m.AccessCampaign.Empty.Add(1)
+			//svc.m.AccessCampaign.Dropped.Add(1)
+			//svc.m.AccessCampaign.Empty.Add(1)
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
@@ -89,7 +89,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		if t.CampaignId == 0 {
 			camp, ok := memCampaign.Map[t.CampaignHash]
 			if !ok {
-				svc.m.AccessCampaign.UnknownCampaignHash.Add(1)
+				//svc.m.AccessCampaign.UnknownCampaignHash.Add(1)
 				logCtx.Error("unknown campaign hash")
 			} else {
 				t.CampaignId = camp.Id
@@ -99,7 +99,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 
 		ipInfo, err := geoIp(t.IP)
 		if err != nil {
-			svc.m.AccessCampaign.ErrorsParseGeoIp.Add(1)
+			//svc.m.AccessCampaign.ErrorsParseGeoIp.Add(1)
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"error": err.Error(),
@@ -169,7 +169,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.IsSatelliteProvider,
 			ipInfo.AccuracyRadius,
 		); err != nil {
-			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
+			//svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
 			logCtx.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"error": err.Error(),
@@ -179,9 +179,10 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
-		svc.m.AccessCampaign.AccessCampaignCreateCount.Add(1)
+		//svc.m.AccessCampaign.AccessCampaignCreateCount.Add(1)
 		logCtx.WithFields(log.Fields{
-			"tid": t.Tid,
+			"tid":   t.Tid,
+			"queue": "access_campaign",
 		}).Info("processed successfully")
 		msg.Ack(false)
 	}

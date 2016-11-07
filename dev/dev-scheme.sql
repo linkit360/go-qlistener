@@ -271,6 +271,11 @@ CREATE TABLE xmp_mobilink_transactions
   id_task INTEGER,
   type INTEGER
 );
+CREATE TABLE xmp_msisdn_postpaid
+(
+  id SERIAL PRIMARY KEY NOT NULL,
+  msisdn VARCHAR(32)
+);
 CREATE TABLE xmp_msisdn_blacklist
 (
   id SERIAL PRIMARY KEY NOT NULL,
@@ -457,6 +462,7 @@ CREATE TABLE xmp_subscriptions
   result SUBSCRIPTION_STATUS DEFAULT ''::subscription_status NOT NULL,
   keep_days INTEGER DEFAULT 10 NOT NULL,
   last_pay_attempt_at TIMESTAMP DEFAULT now() NOT NULL,
+  delay_hours INTEGER NOT NULL,
   paid_hours INTEGER DEFAULT 0 NOT NULL,
   tid VARCHAR(127) DEFAULT ''::character varying NOT NULL
 );
