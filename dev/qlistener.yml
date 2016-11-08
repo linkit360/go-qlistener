@@ -5,6 +5,7 @@ service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   threads_count: 1
   subscriptions_load_days: 5
+  ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
   tables:
   - campaigns
 

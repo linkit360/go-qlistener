@@ -446,7 +446,8 @@ CREATE TABLE xmp_subscription_type
   description VARCHAR(64)
 );
 CREATE TYPE subscription_status AS ENUM
-  ('', 'failed', 'paid', 'blacklisted', 'rejected', 'past', 'canceled');
+  ('', 'failed', 'paid', 'blacklisted', 'postpaid', 'rejected', 'past', 'canceled');
+
 CREATE TABLE xmp_subscriptions
 (
   id SERIAL PRIMARY KEY NOT NULL,

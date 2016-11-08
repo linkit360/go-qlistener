@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oschwald/geoip2-golang"
 	amqp_driver "github.com/streadway/amqp"
+	"github.com/ua-parser/uap-go/uaparser"
 
 	"github.com/vostrok/db"
 	"github.com/vostrok/rabbit"
@@ -34,6 +35,12 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 		log.WithFields(log.Fields{
 			"error": err.Error(),
 		}).Fatal("geoip init")
+	}
+	svc.uaparser, err = uaparser.New(sConf.UAParserRegexesPath)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("User Agent Parser init")
 	}
 
 	svc.m = Metrics{
@@ -118,6 +125,7 @@ type Service struct {
 	userActions          <-chan amqp_driver.Delivery
 	operatorTransactions <-chan amqp_driver.Delivery
 	ipDb                 *geoip2.Reader
+	uaparser             *uaparser.Parser
 	sConfig              ServiceConfig
 	dbConf               db.DataBaseConfig
 	tables               map[string]struct{}
@@ -133,6 +141,7 @@ type ServiceConfig struct {
 	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
 	SubscriptionsLoadDays int          `default:"10" yaml:"subscriptions_load_days"`
 	ThreadsCount          int          `default:"1" yaml:"threads_count"`
+	UAParserRegexesPath   string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
 	Queue                 QueuesConfig `yaml:"queue"`
 	Tables                []string     `yaml:"tables"`
 }

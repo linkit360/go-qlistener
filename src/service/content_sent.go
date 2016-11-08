@@ -82,6 +82,15 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			msg.Ack(false)
 			continue
 		}
+		// todo: add check for every field
+		if len(t.Msisdn) > 32 {
+			log.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long msisdn",
+				"tid":    t.Tid,
+			}).Error("strange msisdn, truncating")
+			t.Msisdn = t.Msisdn[:31]
+		}
 
 		// do not set id_subscriber: msisdn is enough
 		if t.SubscriptionId == 0 {

@@ -9,20 +9,20 @@ import (
 )
 
 type OperatorTransactionLog struct {
-	Tid              string `json:"tid"`
-	Msisdn           string `json:"msisdn"`
-	OperatorToken    string `json:"token"`
-	OperatorCode     int64  `json:"operator_code"`
-	CountryCode      int64  `json:"country_code"`
-	Error            string `json:"error"`
-	Price            int    `json:"price"`
-	ServiceId        int64  `json:"id_service"`
-	SubscriptionId   int64  `json:"id_subscription"`
-	CampaignId       int64  `json:"id_campaign"`
-	RequestBody      string `json:"request_body"`
-	ResponseBody     string `json:"response_body"`
-	ResponseDecision string `json:"response_decision"`
-	ResponseCode     int    `json:"response_code"`
+	Tid              string `json:"tid,omitempty"`
+	Msisdn           string `json:"msisdn,omitempty"`
+	OperatorToken    string `json:"token,omitempty"`
+	OperatorCode     int64  `json:"operator_code,omitempty"`
+	CountryCode      int64  `json:"country_code,omitempty"`
+	Error            string `json:"error,omitempty"`
+	Price            int    `json:"price,omitempty"`
+	ServiceId        int64  `json:"id_service,omitempty"`
+	SubscriptionId   int64  `json:"id_subscription,omitempty"`
+	CampaignId       int64  `json:"id_campaign,omitempty"`
+	RequestBody      string `json:"request_body,omitempty"`
+	ResponseBody     string `json:"response_body,omitempty"`
+	ResponseDecision string `json:"response_decision,omitempty"`
+	ResponseCode     int    `json:"response_code,omitempty"`
 }
 
 type EventNotifyOperatorTransaction struct {
@@ -92,6 +92,16 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 
 		if t.ResponseCode == 0 {
 			logCtx.Error("no response code")
+		}
+
+		// todo: add check for every field
+		if len(t.Msisdn) > 32 {
+			logCtx.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long",
+				"tid":    t.Tid,
+			}).Error("strange msisdn, truncating")
+			t.Msisdn = t.Msisdn[:31]
 		}
 
 		query := fmt.Sprintf("INSERT INTO %soperator_transaction_log ("+

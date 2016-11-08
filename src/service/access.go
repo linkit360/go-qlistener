@@ -75,6 +75,15 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		if t.Tid == "" {
 			logCtx.Error("no tid")
 		}
+		// todo: add check for every field
+		if len(t.Msisdn) > 32 {
+			logCtx.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long",
+				"tid":    t.Tid,
+			}).Error("strange msisdn, truncating")
+			t.Msisdn = t.Msisdn[:31]
+		}
 		if t.UrlPath == "" && t.Tid == "" && t.CampaignHash == "" {
 			//svc.m.AccessCampaign.Dropped.Add(1)
 			//svc.m.AccessCampaign.Empty.Add(1)
@@ -107,10 +116,18 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 		err = nil
 
+		ua := svc.uaparser.Parse(t.UserAgent)
+		os := ua.Os.ToString()
+		device := ua.Device.ToString()
+		browser := ua.UserAgent.ToString()
+
 		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
 			"msisdn, "+
 			"tid, "+
 			"ip, "+
+			"os, "+
+			"device, "+
+			"browser, "+
 			"operator_code, "+
 			"country_code, "+
 			"supported, "+
@@ -137,13 +154,16 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			"geoip_accuracy_radius "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,  "+
-			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)",
+			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.Msisdn,
 			t.Tid,
 			t.IP,
+			os,
+			device,
+			browser,
 			t.OperatorCode,
 			t.CountryCode,
 			t.Supported,
