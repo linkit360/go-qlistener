@@ -1,16 +1,16 @@
 package service
 
 import (
-	"fmt"
-
 	"encoding/json"
+	"fmt"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/expvar"
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
-	"time"
 )
 
 type AccessCampaignMetrics struct {

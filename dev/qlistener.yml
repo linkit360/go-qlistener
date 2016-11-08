@@ -22,6 +22,7 @@ queues:
   access_campaign: access_campaign
   content_sent: content_sent
   user_actions: user_actions
+  operator_transactions: operator_transactions
 
 db:
   conn_ttl: -1

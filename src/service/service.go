@@ -84,6 +84,18 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 	go svc.consumer.Handle(svc.userActions, userActions, sConf.ThreadsCount,
 		sConf.Queue.UserActions, sConf.Queue.UserActions)
 
+	// operator transactions consumer
+	svc.operatorTransactions, err = svc.consumer.AnnounceQueue(
+		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"queue": sConf.Queue.OperatorTransactions,
+			"error": err.Error(),
+		}).Fatal("rbmq consumer: AnnounceQueue")
+	}
+	go svc.consumer.Handle(svc.operatorTransactions, operatorTransactions, sConf.ThreadsCount,
+		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
+
 	// CQR-s
 	if err := initCQR(); err != nil {
 		log.WithFields(log.Fields{
@@ -99,21 +111,23 @@ type Metrics struct {
 }
 
 type Service struct {
-	db             *sql.DB
-	consumer       *rabbit.Consumer
-	contentSent    <-chan amqp_driver.Delivery
-	accessCampaign <-chan amqp_driver.Delivery
-	userActions    <-chan amqp_driver.Delivery
-	ipDb           *geoip2.Reader
-	sConfig        ServiceConfig
-	dbConf         db.DataBaseConfig
-	tables         map[string]struct{}
-	m              Metrics
+	db                   *sql.DB
+	consumer             *rabbit.Consumer
+	contentSent          <-chan amqp_driver.Delivery
+	accessCampaign       <-chan amqp_driver.Delivery
+	userActions          <-chan amqp_driver.Delivery
+	operatorTransactions <-chan amqp_driver.Delivery
+	ipDb                 *geoip2.Reader
+	sConfig              ServiceConfig
+	dbConf               db.DataBaseConfig
+	tables               map[string]struct{}
+	m                    Metrics
 }
 type QueuesConfig struct {
-	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
-	ContentSent    string `default:"content_sent" yaml:"content_sent"`
-	UserActions    string `default:"user_actions" yaml:"user_actions"`
+	AccessCampaign       string `default:"access_campaign" yaml:"access_campaign"`
+	ContentSent          string `default:"content_sent" yaml:"content_sent"`
+	UserActions          string `default:"user_actions" yaml:"user_actions"`
+	OperatorTransactions string `default:"operator_transactions" yaml:"operator_transactions"`
 }
 type ServiceConfig struct {
 	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
