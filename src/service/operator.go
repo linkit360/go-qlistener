@@ -9,19 +9,20 @@ import (
 )
 
 type OperatorTransactionLog struct {
-	Tid            string `json:"tid"`
-	Msisdn         string `json:"msisdn"`
-	OperatorToken  string `json:"token"`
-	OperatorCode   int64  `json:"operator_code"`
-	CountryCode    int64  `json:"country_code"`
-	Error          string `json:"error"`
-	Price          int    `json:"price"`
-	ServiceId      int64  `json:"id_service"`
-	SubscriptionId int64  `json:"id_subscription"`
-	CampaignId     int64  `json:"id_campaign"`
-	RequestBody    string `json:"request_body"`
-	ResponseBody   string `json:"response_body"`
-	ResponseCode   int    `json:"response_code"`
+	Tid              string `json:"tid"`
+	Msisdn           string `json:"msisdn"`
+	OperatorToken    string `json:"token"`
+	OperatorCode     int64  `json:"operator_code"`
+	CountryCode      int64  `json:"country_code"`
+	Error            string `json:"error"`
+	Price            int    `json:"price"`
+	ServiceId        int64  `json:"id_service"`
+	SubscriptionId   int64  `json:"id_subscription"`
+	CampaignId       int64  `json:"id_campaign"`
+	RequestBody      string `json:"request_body"`
+	ResponseBody     string `json:"response_body"`
+	ResponseDecision string `json:"response_decision"`
+	ResponseCode     int    `json:"response_code"`
 }
 
 type EventNotifyOperatorTransaction struct {
@@ -37,16 +38,18 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		var e EventNotifyOperatorTransaction
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			log.WithFields(log.Fields{
-				"error":                err.Error(),
-				"operator_transaction": string(msg.Body),
-				"msg": "dropped",
+				"error": err.Error(),
+				"msg":   "dropped",
 			}).Error("consume operator transaction")
 			msg.Ack(false)
 			continue
 		}
 		t := e.EventData
 
-		logCtx := log.WithField("operator_transaction", t)
+		logCtx := log.WithFields(log.Fields{
+			"token": t.OperatorToken,
+			"tid":   t.Tid,
+		})
 		if t.RequestBody == "" {
 			logCtx.Error("no request body")
 		}
@@ -104,9 +107,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"id_campaign, "+
 			"request_body, "+
 			"response_body, "+
+			"response_decision, "+
 			"response_code "+
 			")"+
-			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -122,10 +126,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.CampaignId,
 			t.RequestBody,
 			t.ResponseBody,
+			t.ResponseDecision,
 			t.ResponseCode,
 		); err != nil {
 			logCtx.WithFields(log.Fields{
-				"tid":   t.Tid,
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
@@ -134,7 +138,6 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		logCtx.WithFields(log.Fields{
-			"tid":   t.Tid,
 			"queue": "operator_transactions",
 		}).Info("processed successfully")
 		msg.Ack(false)
