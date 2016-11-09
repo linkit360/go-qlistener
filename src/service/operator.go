@@ -37,6 +37,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 
 		var e EventNotifyOperatorTransaction
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
+			svc.m.Operator.Dropped.Inc()
 			log.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
@@ -57,6 +58,8 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			logCtx.Error("no response body")
 		}
 		if t.RequestBody == "" || t.ResponseBody == "" {
+			svc.m.Operator.Dropped.Inc()
+			svc.m.Operator.Empty.Inc()
 			msg.Ack(false)
 			continue
 		}
@@ -139,6 +142,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 		); err != nil {
+			svc.m.Operator.CreateDBErrors.Inc()
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "requeue",
@@ -147,6 +151,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
+		svc.m.Operator.CreateCount.Inc()
 		logCtx.WithFields(log.Fields{
 			"queue": "operator_transactions",
 		}).Info("processed successfully")

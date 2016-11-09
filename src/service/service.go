@@ -47,6 +47,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 		AccessCampaign: initAccessCampaignMetrics(),
 		ContentSent:    initContentSentMetrics(),
 		UserActions:    initUserActionsMetrics(),
+		Operator:       initOperatorsMetrics(),
 	}
 
 	svc.consumer = rabbit.NewConsumer(notifConf)
@@ -112,9 +113,10 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 }
 
 type Metrics struct {
-	AccessCampaign AccessCampaignMetrics
-	ContentSent    ContentSentMetrics
-	UserActions    UserActionsMetrics
+	AccessCampaign accessCampaignMetrics
+	ContentSent    contentSentMetrics
+	UserActions    userActionsMetrics
+	Operator       operatorMetrics
 }
 
 type Service struct {

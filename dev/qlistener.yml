@@ -1,4 +1,6 @@
-server: #linkit-mobilink.cb2q7f7mvbwr.ap-south-1.rds.amazonaws.com
+name: mumbai_qlistener
+
+server:
   port: 50304
 
 service:

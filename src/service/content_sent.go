@@ -5,33 +5,10 @@ import (
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/expvar"
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/contentd/service"
-	"time"
 )
-
-type ContentSentMetrics struct {
-	Dropped                  metrics.Gauge
-	Empty                    metrics.Gauge
-	SubscriptionCreateErrors metrics.Gauge
-	SubscriptionCreateCount  metrics.Gauge
-	ContentSentCreateCount   metrics.Gauge
-	ContentSentCreateErrors  metrics.Gauge
-}
-
-func initContentSentMetrics() ContentSentMetrics {
-	return ContentSentMetrics{
-		Dropped: expvar.NewGauge("dropped_content_sent"),
-		Empty:   expvar.NewGauge("empty_content_sent"),
-		SubscriptionCreateErrors: expvar.NewGauge("content_sent_subscription_create_count"),
-		SubscriptionCreateCount:  expvar.NewGauge("content_sent_subscription_create_errors"),
-		ContentSentCreateCount:   expvar.NewGauge("content_sent_create_count"),
-		ContentSentCreateErrors:  expvar.NewGauge("content_sent_create_errors"),
-	}
-}
 
 type EventNotifyContentSent struct {
 	EventName string                        `json:"event_name,omitempty"`
@@ -39,24 +16,12 @@ type EventNotifyContentSent struct {
 }
 
 func contentSent(deliveries <-chan amqp.Delivery) {
-
-	go func() {
-		for range time.Tick(time.Second) {
-			svc.m.ContentSent.Dropped.Set(0)
-			svc.m.ContentSent.Empty.Set(0)
-			svc.m.ContentSent.SubscriptionCreateErrors.Set(0)
-			svc.m.ContentSent.SubscriptionCreateCount.Set(0)
-			svc.m.ContentSent.ContentSentCreateCount.Set(0)
-			svc.m.ContentSent.ContentSentCreateErrors.Set(0)
-		}
-	}()
-
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
 
 		var e EventNotifyContentSent
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			//svc.m.ContentSent.Dropped.Add(1)
+			svc.m.ContentSent.Dropped.Inc()
 
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
@@ -71,8 +36,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
 			t.ContentId == 0 {
-			//svc.m.ContentSent.Dropped.Add(1)
-			//svc.m.ContentSent.Empty.Add(1)
+			svc.m.ContentSent.Dropped.Inc()
+			svc.m.ContentSent.Empty.Inc()
 
 			log.WithFields(log.Fields{
 				"error":       "Empty message",
@@ -125,7 +90,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				t.DelayHours,
 				t.Price,
 			).Scan(&t.SubscriptionId); err != nil {
-				//svc.m.ContentSent.SubscriptionCreateErrors.Add(1)
+				svc.m.ContentSent.SubscriptionCreateErrors.Inc()
 				log.WithFields(log.Fields{
 					"tid":   t.Tid,
 					"error": err.Error(),
@@ -138,7 +103,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			log.WithFields(log.Fields{
 				"tid": t.Tid,
 			}).Info("added new subscription")
-			//svc.m.ContentSent.SubscriptionCreateCount.Add(1)
+			svc.m.ContentSent.SubscriptionCreateCount.Inc()
 		}
 
 		if t.SubscriptionId == 0 {
@@ -170,7 +135,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			//svc.m.ContentSent.ContentSentCreateErrors.Add(1)
+			svc.m.ContentSent.CreateErrors.Inc()
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"query": query,
@@ -181,7 +146,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		//svc.m.ContentSent.ContentSentCreateCount.Add(1)
+		svc.m.ContentSent.CreateCount.Inc()
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "content_sent",

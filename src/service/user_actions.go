@@ -5,29 +5,10 @@ import (
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/expvar"
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
-	"time"
 )
-
-type UserActionsMetrics struct {
-	Dropped                   metrics.Gauge
-	Empty                     metrics.Gauge
-	UserActionsCreateCount    metrics.Gauge
-	UserActionsCreateDBErrors metrics.Gauge
-}
-
-func initUserActionsMetrics() UserActionsMetrics {
-	return UserActionsMetrics{
-		Dropped: expvar.NewGauge("dropped_user_actions"),
-		Empty:   expvar.NewGauge("empty_user_actions"),
-		UserActionsCreateCount:    expvar.NewGauge("user_actions_count"),
-		UserActionsCreateDBErrors: expvar.NewGauge("user_actions_db_errors"),
-	}
-}
 
 type EventNotifyUserActions struct {
 	EventName string                 `json:"event_name,omitempty"`
@@ -36,15 +17,6 @@ type EventNotifyUserActions struct {
 
 func userActions(deliveries <-chan amqp.Delivery) {
 
-	go func() {
-		for range time.Tick(time.Second) {
-			svc.m.UserActions.Dropped.Set(0)
-			svc.m.UserActions.Empty.Set(0)
-			svc.m.UserActions.UserActionsCreateCount.Set(0)
-			svc.m.UserActions.UserActionsCreateDBErrors.Set(0)
-		}
-	}()
-
 	for msg := range deliveries {
 		log.WithFields(log.Fields{
 			"body": string(msg.Body),
@@ -52,7 +24,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 		var e EventNotifyUserActions
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			//svc.m.UserActions.Dropped.Add(1)
+			svc.m.UserActions.Dropped.Inc()
 
 			log.WithFields(log.Fields{
 				"error":       err.Error(),
@@ -65,8 +37,8 @@ func userActions(deliveries <-chan amqp.Delivery) {
 
 		t := e.EventData
 		if t.Tid == "" || t.Action == "" {
-			//svc.m.UserActions.Dropped.Add(1)
-			//svc.m.UserActions.Empty.Add(1)
+			svc.m.UserActions.Dropped.Inc()
+			svc.m.UserActions.Empty.Inc()
 
 			log.WithFields(log.Fields{
 				"error":      "Empty message",
@@ -89,7 +61,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			t.Action,
 			t.Error,
 		); err != nil {
-			//svc.m.UserActions.UserActionsCreateDBErrors.Add(1)
+			svc.m.UserActions.CreateDBErrors.Inc()
 
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
@@ -101,7 +73,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		//svc.m.UserActions.UserActionsCreateCount.Add(1)
+		svc.m.UserActions.CreateCount.Inc()
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "user_actions",

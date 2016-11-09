@@ -8,15 +8,18 @@ import (
 	"runtime"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/gin-gonic/contrib/expvar"
+
 	"github.com/gin-gonic/gin"
 
+	m "github.com/vostrok/metrics"
 	"github.com/vostrok/qlistener/src/config"
 	"github.com/vostrok/qlistener/src/service"
 )
 
 func RunServer() {
 	appConfig := config.LoadConfig()
+	m.Init(appConfig.Name)
+
 	service.InitService(appConfig.Service, appConfig.DbConf, appConfig.Consumer)
 
 	nuCPU := runtime.NumCPU()
@@ -26,8 +29,7 @@ func RunServer() {
 	r := gin.New()
 	service.AddCQRHandlers(r)
 
-	rg := r.Group("/debug")
-	rg.GET("/vars", expvar.Handler())
+	m.AddHandler(r)
 
 	r.Run(":" + appConfig.Server.Port)
 

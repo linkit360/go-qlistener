@@ -3,35 +3,12 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/expvar"
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
 )
-
-type AccessCampaignMetrics struct {
-	Dropped                      metrics.Gauge
-	Empty                        metrics.Gauge
-	UnknownCampaignHash          metrics.Gauge
-	ErrorsParseGeoIp             metrics.Gauge
-	AccessCampaignCreateCount    metrics.Gauge
-	AccessCampaignCreateDBErrors metrics.Gauge
-}
-
-func initAccessCampaignMetrics() AccessCampaignMetrics {
-	return AccessCampaignMetrics{
-		Dropped:                      expvar.NewGauge("dropped_access_campaign"),
-		Empty:                        expvar.NewGauge("empty_access_campaign"),
-		UnknownCampaignHash:          expvar.NewGauge("access_campaign_unknown_hash"),
-		ErrorsParseGeoIp:             expvar.NewGauge("access_campaign_parse_geoip_errors"),
-		AccessCampaignCreateCount:    expvar.NewGauge("access_campaign_create_count"),
-		AccessCampaignCreateDBErrors: expvar.NewGauge("access_campaign_create_db_errors"),
-	}
-}
 
 type EventNotifyAccessCampaign struct {
 	EventName string                    `json:"event_name,omitempty"`
@@ -40,24 +17,13 @@ type EventNotifyAccessCampaign struct {
 
 func accessCampaign(deliveries <-chan amqp.Delivery) {
 
-	go func() {
-		for range time.Tick(time.Second) {
-			svc.m.AccessCampaign.Dropped.Set(0)
-			svc.m.AccessCampaign.Empty.Set(0)
-			svc.m.AccessCampaign.UnknownCampaignHash.Set(0)
-			svc.m.AccessCampaign.ErrorsParseGeoIp.Set(0)
-			svc.m.AccessCampaign.AccessCampaignCreateCount.Set(0)
-			svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Set(0)
-		}
-	}()
-
 	for msg := range deliveries {
 
 		log.WithField("body", string(msg.Body)).Debug("start process")
 
 		var e EventNotifyAccessCampaign
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
-			//svc.m.AccessCampaign.Dropped.Add(1)
+			svc.m.AccessCampaign.Dropped.Inc()
 			log.WithFields(log.Fields{
 				"error":          err.Error(),
 				"accessCampaign": string(msg.Body),
@@ -85,8 +51,8 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 		if t.UrlPath == "" && t.Tid == "" && t.CampaignHash == "" {
-			//svc.m.AccessCampaign.Dropped.Add(1)
-			//svc.m.AccessCampaign.Empty.Add(1)
+			svc.m.AccessCampaign.Dropped.Inc()
+			svc.m.AccessCampaign.Empty.Inc()
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
@@ -98,7 +64,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 		if t.CampaignId == 0 {
 			camp, ok := memCampaign.Map[t.CampaignHash]
 			if !ok {
-				//svc.m.AccessCampaign.UnknownCampaignHash.Add(1)
+				svc.m.AccessCampaign.UnknownHash.Inc()
 				logCtx.Error("unknown campaign hash")
 			} else {
 				t.CampaignId = camp.Id
@@ -108,7 +74,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 
 		ipInfo, err := geoIp(t.IP)
 		if err != nil {
-			//svc.m.AccessCampaign.ErrorsParseGeoIp.Add(1)
+			svc.m.AccessCampaign.ErrorsParseGeoIp.Inc()
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"error": err.Error(),
@@ -189,7 +155,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.IsSatelliteProvider,
 			ipInfo.AccuracyRadius,
 		); err != nil {
-			//svc.m.AccessCampaign.AccessCampaignCreateDBErrors.Add(1)
+			svc.m.AccessCampaign.CreateDBErrors.Inc()
 			logCtx.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"error": err.Error(),
@@ -199,7 +165,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
-		//svc.m.AccessCampaign.AccessCampaignCreateCount.Add(1)
+		svc.m.AccessCampaign.CreateCount.Inc()
 		logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "access_campaign",
