@@ -55,7 +55,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 
-	// access campaign consumer
+	// access campaign queue
 	svc.accessCampaign, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
 	if err != nil {
@@ -67,7 +67,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 	go svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
 		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
 
-	// content sent consumer
+	// content sent queue
 	svc.contentSent, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
 	if err != nil {
@@ -80,7 +80,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 	go svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
 		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
 
-	// user actions consumer
+	// user actions queue
 	svc.userActions, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.UserActions, sConf.Queue.UserActions)
 	if err != nil {
@@ -92,7 +92,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 	go svc.consumer.Handle(svc.userActions, userActions, sConf.ThreadsCount,
 		sConf.Queue.UserActions, sConf.Queue.UserActions)
 
-	// operator transactions consumer
+	// operator transactions queue
 	svc.operatorTransactions, err = svc.consumer.AnnounceQueue(
 		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
 	if err != nil {
@@ -113,10 +113,10 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 }
 
 type Metrics struct {
-	AccessCampaign accessCampaignMetrics
-	ContentSent    contentSentMetrics
-	UserActions    userActionsMetrics
-	Operator       operatorMetrics
+	AccessCampaign *accessCampaignMetrics
+	ContentSent    *contentSentMetrics
+	UserActions    *userActionsMetrics
+	Operator       *operatorMetrics
 }
 
 type Service struct {

@@ -17,10 +17,10 @@ type accessCampaignMetrics struct {
 }
 
 func newGaugeAccessCampaign(name, help string) m.Gauge {
-	return m.NewCustomMetric("access_campaign", name, "access campaign "+help)
+	return m.NewGaugeMetric("access_campaign", name, "access campaign "+help)
 }
-func initAccessCampaignMetrics() accessCampaignMetrics {
-	m := accessCampaignMetrics{
+func initAccessCampaignMetrics() *accessCampaignMetrics {
+	m := &accessCampaignMetrics{
 		Dropped:          newGaugeAccessCampaign("dropped", "dropped msgs"),
 		Empty:            newGaugeAccessCampaign("empty", "dmpty msgs"),
 		UnknownHash:      newGaugeAccessCampaign("unknown_hash", "dnknown campaign hash"),
@@ -43,7 +43,7 @@ func initAccessCampaignMetrics() accessCampaignMetrics {
 
 // Content Sent metrics
 func newGaugeContentSent(name, help string) m.Gauge {
-	return m.NewCustomMetric("content_sent", name, "content sent "+help)
+	return m.NewGaugeMetric("content_sent", name, "content sent "+help)
 }
 
 type contentSentMetrics struct {
@@ -55,12 +55,12 @@ type contentSentMetrics struct {
 	CreateErrors             m.Gauge
 }
 
-func initContentSentMetrics() contentSentMetrics {
-	m := contentSentMetrics{
+func initContentSentMetrics() *contentSentMetrics {
+	m := &contentSentMetrics{
 		Dropped: newGaugeContentSent("dropped", "dropped msgs"),
 		Empty:   newGaugeContentSent("empty", "empty msgs"),
-		SubscriptionCreateErrors: newGaugeContentSent("subscription_create_count", "subscritpion create"),
-		SubscriptionCreateCount:  newGaugeContentSent("subscription_create_errors", "subscription create db errors"),
+		SubscriptionCreateErrors: newGaugeContentSent("subscription_create_errors", "subscritpion create db errors"),
+		SubscriptionCreateCount:  newGaugeContentSent("subscription_create_count", "subscription create"),
 		CreateCount:              newGaugeContentSent("create_count", "create count"),
 		CreateErrors:             newGaugeContentSent("create_errors", "create db errors count"),
 	}
@@ -79,7 +79,7 @@ func initContentSentMetrics() contentSentMetrics {
 
 // user actions metrics
 func newGaugeUserAcrtions(name, help string) m.Gauge {
-	return m.NewCustomMetric("user_actions", name, "user actions "+help)
+	return m.NewGaugeMetric("user_actions", name, "user actions "+help)
 }
 
 type userActionsMetrics struct {
@@ -89,8 +89,8 @@ type userActionsMetrics struct {
 	CreateDBErrors m.Gauge
 }
 
-func initUserActionsMetrics() userActionsMetrics {
-	m := userActionsMetrics{
+func initUserActionsMetrics() *userActionsMetrics {
+	m := &userActionsMetrics{
 		Dropped:        newGaugeUserAcrtions("dropped", "dropped msgs"),
 		Empty:          newGaugeUserAcrtions("empty", "empty msgs"),
 		CreateCount:    newGaugeUserAcrtions("create_count", "create records count"),
@@ -110,7 +110,7 @@ func initUserActionsMetrics() userActionsMetrics {
 
 // operator transaction log metrics
 func newGaugeOperator(name, help string) m.Gauge {
-	return m.NewCustomMetric("operator", name, "operator "+help)
+	return m.NewGaugeMetric("operator", name, "operator "+help)
 }
 
 type operatorMetrics struct {
@@ -120,8 +120,8 @@ type operatorMetrics struct {
 	CreateDBErrors m.Gauge
 }
 
-func initOperatorsMetrics() operatorMetrics {
-	m := operatorMetrics{
+func initOperatorsMetrics() *operatorMetrics {
+	m := &operatorMetrics{
 		Dropped:        newGaugeOperator("dropped", "dropped msgs"),
 		Empty:          newGaugeOperator("empty", "empty msgs"),
 		CreateCount:    newGaugeOperator("create_count", "create records count"),

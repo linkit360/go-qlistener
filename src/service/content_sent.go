@@ -100,10 +100,11 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				msg.Nack(false, true)
 				continue
 			}
+			svc.m.ContentSent.SubscriptionCreateCount.Inc()
 			log.WithFields(log.Fields{
 				"tid": t.Tid,
 			}).Info("added new subscription")
-			svc.m.ContentSent.SubscriptionCreateCount.Inc()
+
 		}
 
 		if t.SubscriptionId == 0 {
