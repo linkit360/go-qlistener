@@ -43,12 +43,7 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 		}).Fatal("User Agent Parser init")
 	}
 
-	svc.m = Metrics{
-		AccessCampaign: initAccessCampaignMetrics(),
-		ContentSent:    initContentSentMetrics(),
-		UserActions:    initUserActionsMetrics(),
-		Operator:       initOperatorsMetrics(),
-	}
+	svc.m = newMetrics()
 
 	svc.consumer = rabbit.NewConsumer(notifConf)
 	if err := svc.consumer.Connect(); err != nil {
@@ -110,13 +105,6 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 			"error": err.Error(),
 		}).Fatal("cqr init")
 	}
-}
-
-type Metrics struct {
-	AccessCampaign *accessCampaignMetrics
-	ContentSent    *contentSentMetrics
-	UserActions    *userActionsMetrics
-	Operator       *operatorMetrics
 }
 
 type Service struct {

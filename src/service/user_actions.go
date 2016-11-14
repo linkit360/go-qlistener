@@ -61,7 +61,8 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			t.Action,
 			t.Error,
 		); err != nil {
-			svc.m.UserActions.CreateDBErrors.Inc()
+			svc.m.DbError.Inc()
+			svc.m.UserActions.AddToDBErrors.Inc()
 
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
@@ -73,7 +74,7 @@ func userActions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		svc.m.UserActions.CreateCount.Inc()
+		svc.m.UserActions.AddToDbSuccess.Inc()
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "user_actions",

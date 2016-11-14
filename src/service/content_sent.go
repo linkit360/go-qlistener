@@ -90,7 +90,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				t.DelayHours,
 				t.Price,
 			).Scan(&t.SubscriptionId); err != nil {
-				svc.m.ContentSent.SubscriptionCreateErrors.Inc()
+				svc.m.DbError.Inc()
+				svc.m.ContentSent.SubscriptionsAddToDBErrors.Inc()
 				log.WithFields(log.Fields{
 					"tid":   t.Tid,
 					"error": err.Error(),
@@ -100,7 +101,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 				msg.Nack(false, true)
 				continue
 			}
-			svc.m.ContentSent.SubscriptionCreateCount.Inc()
+			svc.m.ContentSent.SubscriptionAddToDbSuccess.Inc()
 			log.WithFields(log.Fields{
 				"tid": t.Tid,
 			}).Info("added new subscription")
@@ -136,7 +137,8 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			svc.m.ContentSent.CreateErrors.Inc()
+			svc.m.DbError.Inc()
+			svc.m.ContentSent.AddToDBErrors.Inc()
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"query": query,
@@ -147,7 +149,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
-		svc.m.ContentSent.CreateCount.Inc()
+		svc.m.ContentSent.AddToDbSuccess.Inc()
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "content_sent",

@@ -155,7 +155,8 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.IsSatelliteProvider,
 			ipInfo.AccuracyRadius,
 		); err != nil {
-			svc.m.AccessCampaign.CreateDBErrors.Inc()
+			svc.m.DbError.Inc()
+			svc.m.AccessCampaign.AddToDBErrors.Inc()
 			logCtx.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"error": err.Error(),
@@ -165,7 +166,7 @@ func accessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
-		svc.m.AccessCampaign.CreateCount.Inc()
+		svc.m.AccessCampaign.AddToDbSuccess.Inc()
 		logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "access_campaign",

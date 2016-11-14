@@ -3,26 +3,28 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
 type OperatorTransactionLog struct {
-	Tid              string `json:"tid,omitempty"`
-	Msisdn           string `json:"msisdn,omitempty"`
-	OperatorToken    string `json:"token,omitempty"`
-	OperatorCode     int64  `json:"operator_code,omitempty"`
-	CountryCode      int64  `json:"country_code,omitempty"`
-	Error            string `json:"error,omitempty"`
-	Price            int    `json:"price,omitempty"`
-	ServiceId        int64  `json:"id_service,omitempty"`
-	SubscriptionId   int64  `json:"id_subscription,omitempty"`
-	CampaignId       int64  `json:"id_campaign,omitempty"`
-	RequestBody      string `json:"request_body,omitempty"`
-	ResponseBody     string `json:"response_body,omitempty"`
-	ResponseDecision string `json:"response_decision,omitempty"`
-	ResponseCode     int    `json:"response_code,omitempty"`
+	Tid              string    `json:"tid,omitempty"`
+	Msisdn           string    `json:"msisdn,omitempty"`
+	OperatorToken    string    `json:"token,omitempty"`
+	OperatorCode     int64     `json:"operator_code,omitempty"`
+	CountryCode      int64     `json:"country_code,omitempty"`
+	Error            string    `json:"error,omitempty"`
+	Price            int       `json:"price,omitempty"`
+	ServiceId        int64     `json:"id_service,omitempty"`
+	SubscriptionId   int64     `json:"id_subscription,omitempty"`
+	CampaignId       int64     `json:"id_campaign,omitempty"`
+	RequestBody      string    `json:"request_body,omitempty"`
+	ResponseBody     string    `json:"response_body,omitempty"`
+	ResponseDecision string    `json:"response_decision,omitempty"`
+	ResponseCode     int       `json:"response_code,omitempty"`
+	SentAt           time.Time `json:"sent_at,omitempty"`
 }
 
 type EventNotifyOperatorTransaction struct {
@@ -121,9 +123,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"request_body, "+
 			"response_body, "+
 			"response_decision, "+
-			"response_code "+
+			"response_code,  "+
+			"sent_at "+
 			")"+
-			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -141,8 +144,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseBody,
 			t.ResponseDecision,
 			t.ResponseCode,
+			t.SentAt,
 		); err != nil {
-			svc.m.Operator.CreateDBErrors.Inc()
+			svc.m.DbError.Inc()
+			svc.m.Operator.AddToDBErrors.Inc()
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "requeue",
@@ -151,7 +156,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
-		svc.m.Operator.CreateCount.Inc()
+		svc.m.Operator.AddToDbSuccess.Inc()
 		logCtx.WithFields(log.Fields{
 			"queue": "operator_transactions",
 		}).Info("processed successfully")
