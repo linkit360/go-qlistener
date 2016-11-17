@@ -1,25 +1,31 @@
 package service
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	"time"
 
 	m "github.com/vostrok/metrics"
 )
 
 func newMetrics() Metrics {
-	return Metrics{
-		DbError:        m.NewCounter("db_errors", "db errors"),
+	m := Metrics{
+		DbErrors:       m.NewGauge("", "", "db_errors", "db errors"),
 		AccessCampaign: initAccessCampaignMetrics(),
 		ContentSent:    initContentSentMetrics(),
 		UserActions:    initUserActionsMetrics(),
 		Operator:       initOperatorsMetrics(),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.DbErrors.Update()
+		}
+	}()
+	return m
 }
 
 // todo: add_to_db_success
 // todo: add_to_db_errors
 type Metrics struct {
-	DbError        prometheus.Counter
+	DbErrors       m.Gauge
 	AccessCampaign *accessCampaignMetrics
 	ContentSent    *contentSentMetrics
 	UserActions    *userActionsMetrics
@@ -28,98 +34,134 @@ type Metrics struct {
 
 // Access Campaign metrics
 type accessCampaignMetrics struct {
-	Dropped          prometheus.Counter
-	Empty            prometheus.Counter
-	UnknownHash      prometheus.Counter
-	ErrorsParseGeoIp prometheus.Counter
-	AddToDbSuccess   prometheus.Counter
-	AddToDBErrors    prometheus.Counter
+	Dropped          m.Gauge
+	Empty            m.Gauge
+	UnknownHash      m.Gauge
+	ErrorsParseGeoIp m.Gauge
+	AddToDbSuccess   m.Gauge
+	AddToDBErrors    m.Gauge
 }
 
-func newCounterAccessCampaign(name, help string) prometheus.Counter {
-	return m.NewCounter("access_campaign_"+name, "access campaign "+help)
+func newGaugeAccessCampaign(name, help string) m.Gauge {
+	return m.NewGauge("", "access_campaign", ""+name, "access campaign "+help)
 }
 func initAccessCampaignMetrics() *accessCampaignMetrics {
 	m := &accessCampaignMetrics{
-		Dropped:          newCounterAccessCampaign("dropped", "dropped msgs"),
-		Empty:            newCounterAccessCampaign("empty", "dmpty msgs"),
-		UnknownHash:      newCounterAccessCampaign("unknown_hash", "dnknown campaign hash"),
-		ErrorsParseGeoIp: newCounterAccessCampaign("parse_geoip_errors", "parse geoip error"),
-		AddToDbSuccess:   newCounterAccessCampaign("add_to_db_success", "create access campaign"),
-		AddToDBErrors:    newCounterAccessCampaign("add_to_db_errors", "access campaign db errors"),
+		Dropped:          newGaugeAccessCampaign("dropped", "dropped msgs"),
+		Empty:            newGaugeAccessCampaign("empty", "dmpty msgs"),
+		UnknownHash:      newGaugeAccessCampaign("unknown_hash", "dnknown campaign hash"),
+		ErrorsParseGeoIp: newGaugeAccessCampaign("parse_geoip_errors", "parse geoip error"),
+		AddToDbSuccess:   newGaugeAccessCampaign("add_to_db_success", "create access campaign"),
+		AddToDBErrors:    newGaugeAccessCampaign("add_to_db_errors", "access campaign db errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.UnknownHash.Update()
+			m.ErrorsParseGeoIp.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }
 
 // Content Sent metrics
-func newCounterContentSent(name, help string) prometheus.Counter {
-	return m.NewCounter("content_sent_"+name, "content sent "+help)
+func newGaugeContentSent(name, help string) m.Gauge {
+	return m.NewGauge("", "content_sent", name, "content sent "+help)
 }
-func newCounterAddedSubscription(name, help string) prometheus.Counter {
-	return m.NewCounter("new_subscription_"+name, "new subscription "+help)
+func newGaugeAddedSubscription(name, help string) m.Gauge {
+	return m.NewGauge("", "new_subscription", name, "new subscription "+help)
 }
 
 type contentSentMetrics struct {
-	Dropped                    prometheus.Counter
-	Empty                      prometheus.Counter
-	SubscriptionsAddToDBErrors prometheus.Counter
-	SubscriptionAddToDbSuccess prometheus.Counter
-	AddToDbSuccess             prometheus.Counter
-	AddToDBErrors              prometheus.Counter
+	Dropped                    m.Gauge
+	Empty                      m.Gauge
+	SubscriptionsAddToDBErrors m.Gauge
+	SubscriptionAddToDbSuccess m.Gauge
+	AddToDbSuccess             m.Gauge
+	AddToDBErrors              m.Gauge
 }
 
 func initContentSentMetrics() *contentSentMetrics {
 	m := &contentSentMetrics{
-		Dropped: newCounterContentSent("dropped", "dropped msgs"),
-		Empty:   newCounterContentSent("empty", "empty msgs"),
-		SubscriptionsAddToDBErrors: newCounterAddedSubscription("add_to_db_errors", "add to db errors"),
-		SubscriptionAddToDbSuccess: newCounterAddedSubscription("add_to_db_success", "add to db count"),
-		AddToDbSuccess:             newCounterContentSent("add_to_db_success", "add to db errors"),
-		AddToDBErrors:              newCounterContentSent("add_to_db_errors", "add to db errors"),
+		Dropped: newGaugeContentSent("dropped", "dropped msgs"),
+		Empty:   newGaugeContentSent("empty", "empty msgs"),
+		SubscriptionsAddToDBErrors: newGaugeAddedSubscription("add_to_db_errors", "add to db errors"),
+		SubscriptionAddToDbSuccess: newGaugeAddedSubscription("add_to_db_success", "add to db count"),
+		AddToDbSuccess:             newGaugeContentSent("add_to_db_success", "add to db errors"),
+		AddToDBErrors:              newGaugeContentSent("add_to_db_errors", "add to db errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.SubscriptionsAddToDBErrors.Update()
+			m.SubscriptionAddToDbSuccess.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }
 
 // user actions metrics
-func newCounterUserAcrtions(name, help string) prometheus.Counter {
-	return m.NewCounter("user_actions_"+name, "user actions "+help)
+func newGaugeUserActions(name, help string) m.Gauge {
+	return m.NewGauge("", "user_actions", name, "user actions "+help)
 }
 
 type userActionsMetrics struct {
-	Dropped        prometheus.Counter
-	Empty          prometheus.Counter
-	AddToDbSuccess prometheus.Counter
-	AddToDBErrors  prometheus.Counter
+	Dropped        m.Gauge
+	Empty          m.Gauge
+	AddToDbSuccess m.Gauge
+	AddToDBErrors  m.Gauge
 }
 
 func initUserActionsMetrics() *userActionsMetrics {
 	m := &userActionsMetrics{
-		Dropped:        newCounterUserAcrtions("dropped", "dropped msgs"),
-		Empty:          newCounterUserAcrtions("empty", "empty msgs"),
-		AddToDbSuccess: newCounterUserAcrtions("add_to_db_success", "create records count"),
-		AddToDBErrors:  newCounterUserAcrtions("add_to_db_errors", "create record: database errors"),
+		Dropped:        newGaugeUserActions("dropped", "dropped msgs"),
+		Empty:          newGaugeUserActions("empty", "empty msgs"),
+		AddToDbSuccess: newGaugeUserActions("add_to_db_success", "create records count"),
+		AddToDBErrors:  newGaugeUserActions("add_to_db_errors", "create record: database errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }
 
 // operator transaction log metrics
-func newCounterOperator(name, help string) prometheus.Counter {
-	return m.NewCounter("operator_"+name, "operator transaction logs "+help)
+func newGaugeOperator(name, help string) m.Gauge {
+	return m.NewGauge("", "operator", name, "operator transaction logs "+help)
 }
 
 type operatorMetrics struct {
-	Dropped        prometheus.Counter
-	Empty          prometheus.Counter
-	AddToDbSuccess prometheus.Counter
-	AddToDBErrors  prometheus.Counter
+	Dropped        m.Gauge
+	Empty          m.Gauge
+	AddToDbSuccess m.Gauge
+	AddToDBErrors  m.Gauge
 }
 
 func initOperatorsMetrics() *operatorMetrics {
 	m := &operatorMetrics{
-		Dropped:        newCounterOperator("dropped", "dropped msgs"),
-		Empty:          newCounterOperator("empty", "empty msgs"),
-		AddToDbSuccess: newCounterOperator("add_to_db_success", "create records count"),
-		AddToDBErrors:  newCounterOperator("add_to_db_errors", "create record: database errors"),
+		Dropped:        newGaugeOperator("dropped", "dropped msgs"),
+		Empty:          newGaugeOperator("empty", "empty msgs"),
+		AddToDbSuccess: newGaugeOperator("add_to_db_success", "create records count"),
+		AddToDBErrors:  newGaugeOperator("add_to_db_errors", "create record: database errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }

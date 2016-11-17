@@ -57,62 +57,10 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
-		// do not set id_subscriber: msisdn is enough
 		if t.SubscriptionId == 0 {
-			query := fmt.Sprintf("INSERT INTO %ssubscriptions ( "+
-				"result, "+
-				"id_campaign, "+
-				"id_service, "+
-				"msisdn, "+
-				"publisher, "+
-				"pixel, "+
-				"tid, "+
-				"country_code, "+
-				"operator_code, "+
-				"paid_hours, "+
-				"delay_hours, "+
-				"price "+
-				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) "+
-				"RETURNING id",
-				svc.dbConf.TablePrefix)
-
-			if err := svc.db.QueryRow(query,
-				"",
-				t.CampaignId,
-				t.ServiceId,
-				t.Msisdn,
-				t.Publisher,
-				t.Pixel,
-				t.Tid,
-				t.CountryCode,
-				t.OperatorCode,
-				t.PaidHours,
-				t.DelayHours,
-				t.Price,
-			).Scan(&t.SubscriptionId); err != nil {
-				svc.m.DbError.Inc()
-				svc.m.ContentSent.SubscriptionsAddToDBErrors.Inc()
-				log.WithFields(log.Fields{
-					"tid":   t.Tid,
-					"error": err.Error(),
-					"query": query,
-					"msg":   "requeue",
-				}).Error("add new subscription for sentcontent")
-				msg.Nack(false, true)
-				continue
-			}
-			svc.m.ContentSent.SubscriptionAddToDbSuccess.Inc()
 			log.WithFields(log.Fields{
 				"tid": t.Tid,
-			}).Info("added new subscription")
-
-		}
-
-		if t.SubscriptionId == 0 {
-			log.WithFields(log.Fields{
-				"tid":   t.Tid,
-				"error": "UNEXPECTED CODE REACHED",
-			}).Error("add content sent")
+			}).Debug("subscription id is empty")
 		}
 
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
@@ -137,8 +85,9 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			svc.m.DbError.Inc()
+			svc.m.DbErrors.Inc()
 			svc.m.ContentSent.AddToDBErrors.Inc()
+
 			log.WithFields(log.Fields{
 				"tid":   t.Tid,
 				"query": query,
@@ -150,6 +99,7 @@ func contentSent(deliveries <-chan amqp.Delivery) {
 		}
 
 		svc.m.ContentSent.AddToDbSuccess.Inc()
+
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
 			"queue": "content_sent",

@@ -146,8 +146,9 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseCode,
 			t.SentAt,
 		); err != nil {
-			svc.m.DbError.Inc()
+			svc.m.DbErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "requeue",
@@ -157,6 +158,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		svc.m.Operator.AddToDbSuccess.Inc()
+
 		logCtx.WithFields(log.Fields{
 			"queue": "operator_transactions",
 		}).Info("processed successfully")

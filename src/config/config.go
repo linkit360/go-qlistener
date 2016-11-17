@@ -42,7 +42,7 @@ func LoadConfig() AppConfig {
 	}
 
 	appConfig.Server.Port = envString("PORT", appConfig.Server.Port)
-	appConfig.Consumer.Connection.Host = envString("RBMQ_HOST", appConfig.Consumer.Connection.Host)
+	appConfig.Consumer.Conn.Host = envString("RBMQ_HOST", appConfig.Consumer.Conn.Host)
 
 	appConfig.Service.GeoIpPath = envString("GEOIP_PATH", appConfig.Service.GeoIpPath)
 
