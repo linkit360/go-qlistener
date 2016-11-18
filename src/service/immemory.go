@@ -7,7 +7,27 @@ import (
 
 	"database/sql"
 	log "github.com/Sirupsen/logrus"
+	"github.com/gin-gonic/gin"
+	"github.com/vostrok/utils/cqr"
 )
+
+var inMemConf = []cqr.CQRConfig{
+	{
+		Table:      "campaigns",
+		ReloadFunc: memCampaign.Reload,
+	},
+}
+
+func initInMem() error {
+	return cqr.InitCQR(inMemConf)
+}
+
+func AddCQRHandlers(r *gin.Engine) {
+	cqr.AddCQRHandler(reloadCQRFunc, r)
+}
+func reloadCQRFunc(c *gin.Context) {
+	cqr.CQRReloadFunc(inMemConf, c)(c)
+}
 
 // Tasks:
 // Keep in memory all active campaigns

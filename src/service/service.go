@@ -5,17 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/gin-gonic/gin"
 	"github.com/oschwald/geoip2-golang"
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	"github.com/vostrok/db"
-	"github.com/vostrok/rabbit"
+	"github.com/vostrok/utils/amqp"
+	"github.com/vostrok/utils/db"
 )
 
 var svc Service
@@ -100,10 +97,10 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
 
 	// CQR-s
-	if err := initCQR(); err != nil {
+	if err := initInMem(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
-		}).Fatal("cqr init")
+		}).Fatal("inimem init")
 	}
 }
 
@@ -134,84 +131,6 @@ type ServiceConfig struct {
 	UAParserRegexesPath   string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
 	Queue                 QueuesConfig `yaml:"queue"`
 	Tables                []string     `yaml:"tables"`
-}
-
-func initCQR() error {
-	if err := memCampaign.Reload(); err != nil {
-		return fmt.Errorf("memCampaign.Reload: %s", err.Error())
-	}
-	svc.tables = make(map[string]struct{}, len(svc.sConfig.Tables))
-	for _, v := range svc.sConfig.Tables {
-		svc.tables[v] = struct{}{}
-	}
-	return nil
-}
-
-type response struct {
-	Success bool        `json:"success,omitempty"`
-	Err     error       `json:"error,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Status  int         `json:"-"`
-}
-
-func AddCQRHandlers(r *gin.Engine) {
-	rg := r.Group("/cqr")
-	rg.GET("", Reload)
-}
-
-func render(msg response, c *gin.Context) {
-	if msg.Err != nil {
-		c.Header("Error", msg.Err.Error())
-		c.Error(msg.Err)
-	}
-	c.JSON(msg.Status, msg)
-}
-
-func Reload(c *gin.Context) {
-	var err error
-	r := response{Err: err, Status: http.StatusOK}
-
-	table, exists := c.GetQuery("table")
-	if !exists || table == "" {
-		table, exists = c.GetQuery("t")
-		if !exists || table == "" {
-			err := errors.New("Table name required")
-			r.Status = http.StatusBadRequest
-			r.Err = err
-			render(r, c)
-			return
-		}
-	}
-	r.Success, r.Err = CQR(table)
-	render(r, c)
-	return
-}
-func CQR(table string) (bool, error) {
-	if len(table) == 0 {
-		log.WithFields(log.Fields{
-			"error": "No table name given",
-		}).Errorf("CQR request")
-		return false, nil
-	}
-	_, ok := svc.tables[table]
-	if !ok {
-		log.WithFields(log.Fields{
-			"error": "table name doesn't match any",
-		}).Errorf("CQR request")
-		return false, nil
-	}
-	// should we re-build service
-	switch {
-	case strings.Contains(table, "campaigns"):
-		if err := memCampaign.Reload(); err != nil {
-			return false, fmt.Errorf("memCampaign.Reload: %s", err.Error())
-		}
-
-	default:
-		return false, fmt.Errorf("CQR Request: Unknown table: %s", table)
-	}
-
-	return true, nil
 }
 
 type IpInfo struct {

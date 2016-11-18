@@ -11,9 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	m "github.com/vostrok/metrics"
 	"github.com/vostrok/qlistener/src/config"
 	"github.com/vostrok/qlistener/src/service"
+	m "github.com/vostrok/utils/metrics"
 )
 
 func RunServer() {
