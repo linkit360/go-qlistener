@@ -20,7 +20,7 @@ type AppConfig struct {
 	Name     string                `yaml:"name"`
 	Server   ServerConfig          `yaml:"server"`
 	Service  service.ServiceConfig `yaml:"service"`
-	Consumer rabbit.ConsumerConfig `yaml:"consumer"`
+	Consumer amqp.ConsumerConfig   `yaml:"consumer"`
 	DbConf   db.DataBaseConfig     `yaml:"db"`
 }
 
