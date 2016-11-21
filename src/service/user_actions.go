@@ -15,7 +15,7 @@ type EventNotifyUserActions struct {
 	EventData rbmq.UserActionsNotify `json:"event_data,omitempty"`
 }
 
-func userActions(deliveries <-chan amqp.Delivery) {
+func processUserActions(deliveries <-chan amqp.Delivery) {
 
 	for msg := range deliveries {
 		log.WithFields(log.Fields{

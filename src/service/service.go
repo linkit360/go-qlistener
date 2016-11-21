@@ -19,7 +19,7 @@ var svc Service
 
 const ACTIVE_STATUS = 1
 
-func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit.ConsumerConfig) {
+func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf amqp.ConsumerConfig) {
 	log.SetLevel(log.DebugLevel)
 
 	var err error
@@ -42,81 +42,72 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf rabbit
 
 	svc.m = newMetrics()
 
-	svc.consumer = rabbit.NewConsumer(notifConf)
+	svc.consumer = amqp.NewConsumer(notifConf)
 	if err := svc.consumer.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 
 	// access campaign queue
-	svc.accessCampaign, err = svc.consumer.AnnounceQueue(
-		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"queue": sConf.Queue.AccessCampaign,
-			"error": err.Error(),
-		}).Fatal("rbmq consumer: AnnounceQueue")
-	}
-	go svc.consumer.Handle(svc.accessCampaign, accessCampaign, sConf.ThreadsCount,
-		sConf.Queue.AccessCampaign, sConf.Queue.AccessCampaign)
+	amqp.InitQueue(
+		svc.consumer,
+		svc.accessCampaignChan,
+		processAccessCampaign,
+		sConf.ThreadsCount,
+		sConf.Queue.AccessCampaign,
+		sConf.Queue.AccessCampaign,
+	)
 
 	// content sent queue
-	svc.contentSent, err = svc.consumer.AnnounceQueue(
-		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
-	if err != nil {
-
-		log.WithFields(log.Fields{
-			"queue": sConf.Queue.ContentSent,
-			"error": err.Error(),
-		}).Fatal("rbmq consumer: AnnounceQueue")
-	}
-	go svc.consumer.Handle(svc.contentSent, contentSent, sConf.ThreadsCount,
-		sConf.Queue.ContentSent, sConf.Queue.ContentSent)
+	amqp.InitQueue(
+		svc.consumer,
+		svc.contentSentChan,
+		processContentSent,
+		sConf.ThreadsCount,
+		sConf.Queue.ContentSent,
+		sConf.Queue.ContentSent,
+	)
 
 	// user actions queue
-	svc.userActions, err = svc.consumer.AnnounceQueue(
-		sConf.Queue.UserActions, sConf.Queue.UserActions)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"queue": sConf.Queue.UserActions,
-			"error": err.Error(),
-		}).Fatal("rbmq consumer: AnnounceQueue")
-	}
-	go svc.consumer.Handle(svc.userActions, userActions, sConf.ThreadsCount,
-		sConf.Queue.UserActions, sConf.Queue.UserActions)
+	amqp.InitQueue(
+		svc.consumer,
+		svc.userActionsChan,
+		processUserActions,
+		sConf.ThreadsCount,
+		sConf.Queue.UserActions,
+		sConf.Queue.UserActions,
+	)
 
 	// operator transactions queue
-	svc.operatorTransactions, err = svc.consumer.AnnounceQueue(
-		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"queue": sConf.Queue.OperatorTransactions,
-			"error": err.Error(),
-		}).Fatal("rbmq consumer: AnnounceQueue")
-	}
-	go svc.consumer.Handle(svc.operatorTransactions, operatorTransactions, sConf.ThreadsCount,
-		sConf.Queue.OperatorTransactions, sConf.Queue.OperatorTransactions)
+	amqp.InitQueue(
+		svc.consumer,
+		svc.operatorTransactionsChan,
+		operatorTransactions,
+		sConf.ThreadsCount,
+		sConf.Queue.OperatorTransactions,
+		sConf.Queue.OperatorTransactions,
+	)
 
 	// CQR-s
 	if err := initInMem(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
-		}).Fatal("inimem init")
+		}).Fatal("init mem")
 	}
 }
 
 type Service struct {
-	db                   *sql.DB
-	consumer             *rabbit.Consumer
-	contentSent          <-chan amqp_driver.Delivery
-	accessCampaign       <-chan amqp_driver.Delivery
-	userActions          <-chan amqp_driver.Delivery
-	operatorTransactions <-chan amqp_driver.Delivery
-	ipDb                 *geoip2.Reader
-	uaparser             *uaparser.Parser
-	sConfig              ServiceConfig
-	dbConf               db.DataBaseConfig
-	tables               map[string]struct{}
-	m                    Metrics
+	db                       *sql.DB
+	consumer                 *amqp.Consumer
+	contentSentChan          <-chan amqp_driver.Delivery
+	accessCampaignChan       <-chan amqp_driver.Delivery
+	userActionsChan          <-chan amqp_driver.Delivery
+	operatorTransactionsChan <-chan amqp_driver.Delivery
+	ipDb                     *geoip2.Reader
+	uaparser                 *uaparser.Parser
+	sConfig                  ServiceConfig
+	dbConf                   db.DataBaseConfig
+	tables                   map[string]struct{}
+	m                        Metrics
 }
 type QueuesConfig struct {
 	AccessCampaign       string `default:"access_campaign" yaml:"access_campaign"`

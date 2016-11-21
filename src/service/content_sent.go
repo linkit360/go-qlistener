@@ -15,7 +15,7 @@ type EventNotifyContentSent struct {
 	EventData service.ContentSentProperties `json:"event_data,omitempty"`
 }
 
-func contentSent(deliveries <-chan amqp.Delivery) {
+func processContentSent(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
 

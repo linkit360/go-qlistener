@@ -15,7 +15,7 @@ type EventNotifyAccessCampaign struct {
 	EventData rbmq.AccessCampaignNotify `json:"event_data,omitempty"`
 }
 
-func accessCampaign(deliveries <-chan amqp.Delivery) {
+func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 	for msg := range deliveries {
 
