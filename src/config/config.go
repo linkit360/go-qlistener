@@ -3,25 +3,27 @@ package config
 import (
 	"flag"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/configor"
 
+	inmem_client "github.com/vostrok/inmem/rpcclient"
 	"github.com/vostrok/qlistener/src/service"
 	"github.com/vostrok/utils/amqp"
 	"github.com/vostrok/utils/db"
-	"strings"
 )
 
 type ServerConfig struct {
 	Port string `default:"50304"`
 }
 type AppConfig struct {
-	Name     string                `yaml:"name"`
-	Server   ServerConfig          `yaml:"server"`
-	Service  service.ServiceConfig `yaml:"service"`
-	Consumer amqp.ConsumerConfig   `yaml:"consumer"`
-	DbConf   db.DataBaseConfig     `yaml:"db"`
+	Name              string                       `yaml:"name"`
+	Server            ServerConfig                 `yaml:"server"`
+	InMemClientConfig inmem_client.RPCClientConfig `yaml:"inmem_client"`
+	Service           service.ServiceConfig        `yaml:"service"`
+	Consumer          amqp.ConsumerConfig          `yaml:"consumer"`
+	DbConf            db.DataBaseConfig            `yaml:"db"`
 }
 
 func LoadConfig() AppConfig {

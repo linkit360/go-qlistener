@@ -8,6 +8,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
+	inmem_client "github.com/vostrok/inmem/rpcclient"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -62,10 +63,12 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		if t.CampaignId == 0 {
-			camp, ok := memCampaign.Map[t.CampaignHash]
-			if !ok {
+			camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
+			if err != nil {
 				svc.m.AccessCampaign.UnknownHash.Inc()
-				logCtx.Error("unknown campaign hash")
+
+				err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
+				logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
 			} else {
 				t.CampaignId = camp.Id
 				t.ServiceId = camp.ServiceId

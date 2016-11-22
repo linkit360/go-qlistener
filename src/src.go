@@ -20,14 +20,18 @@ func RunServer() {
 	appConfig := config.LoadConfig()
 	m.Init(appConfig.Name)
 
-	service.InitService(appConfig.Service, appConfig.DbConf, appConfig.Consumer)
+	service.InitService(
+		appConfig.Service,
+		appConfig.InMemClientConfig,
+		appConfig.DbConf,
+		appConfig.Consumer,
+	)
 
 	nuCPU := runtime.NumCPU()
 	runtime.GOMAXPROCS(nuCPU)
 	log.WithField("CPUCount", nuCPU)
 
 	r := gin.New()
-	service.AddCQRHandlers(r)
 
 	m.AddHandler(r)
 

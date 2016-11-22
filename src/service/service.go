@@ -11,6 +11,7 @@ import (
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
+	inmem_client "github.com/vostrok/inmem/rpcclient"
 	"github.com/vostrok/utils/amqp"
 	"github.com/vostrok/utils/db"
 )
@@ -19,14 +20,20 @@ var svc Service
 
 const ACTIVE_STATUS = 1
 
-func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf amqp.ConsumerConfig) {
+func InitService(
+	sConf ServiceConfig,
+	inMemConfig inmem_client.RPCClientConfig,
+	dbConf db.DataBaseConfig,
+	notifConf amqp.ConsumerConfig,
+) {
 	log.SetLevel(log.DebugLevel)
 
-	var err error
-
+	inmem_client.Init(inMemConfig)
 	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf
 	svc.dbConf = dbConf
+
+	var err error
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -86,13 +93,6 @@ func InitService(sConf ServiceConfig, dbConf db.DataBaseConfig, notifConf amqp.C
 		sConf.Queue.OperatorTransactions,
 		sConf.Queue.OperatorTransactions,
 	)
-
-	// CQR-s
-	if err := initInMem(); err != nil {
-		log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Fatal("init mem")
-	}
 }
 
 type Service struct {
