@@ -11,7 +11,7 @@ CREATE TABLE xmp_content_sent (
   country_code      INT NOT NULL DEFAULT 0
 );
 
-CREATE TYPE user_action AS ENUM ('access', 'pull_click');
+CREATE TYPE user_action AS ENUM ('access', 'pull_click', 'content_get');
 CREATE TABLE xmp_user_actions (
   id serial PRIMARY KEY,
   tid  varchar(127) NOT NULL DEFAULT '',

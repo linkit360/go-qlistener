@@ -3,6 +3,11 @@ name: mumbai_qlistener
 server:
   port: 50304
 
+
+inmem_client:
+  dsn: localhost:50307
+  timeout: 10
+
 service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   threads_count: 1
