@@ -121,7 +121,6 @@ type ServiceConfig struct {
 	ThreadsCount          int          `default:"1" yaml:"threads_count"`
 	UAParserRegexesPath   string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
 	Queue                 QueuesConfig `yaml:"queue"`
-	Tables                []string     `yaml:"tables"`
 }
 
 type IpInfo struct {

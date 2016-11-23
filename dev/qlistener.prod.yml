@@ -21,7 +21,7 @@ consumer:
   binding_key: ""
   reconnect_delay: 10
 
-queues:
+queue:
   access_campaign: access_campaign
   content_sent: content_sent
   user_actions: user_actions
