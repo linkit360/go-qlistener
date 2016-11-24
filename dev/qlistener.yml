@@ -17,7 +17,7 @@ service:
     access_campaign: access_campaign
     content_sent: content_sent
     user_actions: user_actions
-    operator_transactions: transaction_log
+    transaction_log: transaction_log
 
 consumer:
   conn:

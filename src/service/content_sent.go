@@ -64,6 +64,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		}
 
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
+			"sent_at, "+
 			"msisdn, "+
 			"tid, "+
 			"id_campaign, "+
@@ -72,10 +73,11 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			"id_content, "+
 			"country_code, "+
 			"operator_code "+
-			") values ($1, $2, $3, $4, $5, $6, $7, $8)",
+			") values ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
+			t.SentAt,
 			t.Msisdn,
 			t.Tid,
 			t.CampaignId,

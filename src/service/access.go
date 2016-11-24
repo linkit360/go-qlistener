@@ -91,6 +91,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		browser := ua.UserAgent.ToString()
 
 		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
+			"access_at, "+
 			"msisdn, "+
 			"tid, "+
 			"ip, "+
@@ -123,10 +124,11 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			"geoip_accuracy_radius "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,  "+
-			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
+			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
+			t.SentAt,
 			t.Msisdn,
 			t.Tid,
 			t.IP,

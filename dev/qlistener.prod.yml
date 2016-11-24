@@ -8,8 +8,11 @@ service:
   threads_count: 1
   subscriptions_load_days: 5
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
-  tables:
-  - campaigns
+  queue:
+    access_campaign: access_campaign
+    content_sent: content_sent
+    user_actions: user_actions
+    transaction_log: transaction_log
 
 consumer:
   conn:
@@ -21,11 +24,6 @@ consumer:
   binding_key: ""
   reconnect_delay: 10
 
-queue:
-  access_campaign: access_campaign
-  content_sent: content_sent
-  user_actions: user_actions
-  operator_transactions: operator_transactions
 
 db:
   conn_ttl: -1
