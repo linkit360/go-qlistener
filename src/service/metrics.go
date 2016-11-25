@@ -2,16 +2,22 @@ package service
 
 import (
 	m "github.com/vostrok/utils/metrics"
+	"time"
 )
 
 func newMetrics() Metrics {
 	m := Metrics{
-		DbErrors:       m.NewGauge("", "", "db_errors", "db errors"),
+		DbErrors:       m.NewGaugeAlert("", "", "db_errors", "db errors"),
 		AccessCampaign: initAccessCampaignMetrics(),
 		ContentSent:    initContentSentMetrics(),
 		UserActions:    initUserActionsMetrics(),
 		Operator:       initOperatorsMetrics(),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.DbErrors.Update()
+		}
+	}()
 	return m
 }
 
@@ -47,6 +53,16 @@ func initAccessCampaignMetrics() *accessCampaignMetrics {
 		AddToDbSuccess:   newGaugeAccessCampaign("add_to_db_success", "create access campaign"),
 		AddToDBErrors:    newGaugeAccessCampaign("add_to_db_errors", "access campaign db errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.UnknownHash.Update()
+			m.AddToDbSuccess.Update()
+			m.ErrorsParseGeoIp.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }
 
@@ -76,6 +92,16 @@ func initContentSentMetrics() *contentSentMetrics {
 		AddToDbSuccess:             newGaugeContentSent("add_to_db_success", "add to db errors"),
 		AddToDBErrors:              newGaugeContentSent("add_to_db_errors", "add to db errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+			m.SubscriptionsAddToDBErrors.Update()
+			m.SubscriptionAddToDbSuccess.Update()
+		}
+	}()
 	return m
 }
 
@@ -98,6 +124,14 @@ func initUserActionsMetrics() *userActionsMetrics {
 		AddToDbSuccess: newGaugeUserActions("add_to_db_success", "create records count"),
 		AddToDBErrors:  newGaugeUserActions("add_to_db_errors", "create record: database errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }
 
@@ -120,5 +154,13 @@ func initOperatorsMetrics() *operatorMetrics {
 		AddToDbSuccess: newGaugeOperator("add_to_db_success", "create records count"),
 		AddToDBErrors:  newGaugeOperator("add_to_db_errors", "create record: database errors"),
 	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
 	return m
 }

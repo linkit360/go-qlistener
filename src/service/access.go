@@ -79,9 +79,10 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		if err != nil {
 			svc.m.AccessCampaign.ErrorsParseGeoIp.Inc()
 			log.WithFields(log.Fields{
-				"tid":   t.Tid,
-				"error": err.Error(),
-			}).Error("parse geo ip city, continued..")
+				"tid":      t.Tid,
+				"IP":       t.IP,
+				"parseErr": err.Error(),
+			}).Debug("parse geo ip city, continued..")
 		}
 		err = nil
 

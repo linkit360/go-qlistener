@@ -3,7 +3,6 @@ name: mumbai_qlistener
 server:
   port: 50304
 
-
 inmem_client:
   dsn: localhost:50307
   timeout: 10
