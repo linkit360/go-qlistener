@@ -49,14 +49,28 @@ func InitService(
 
 	svc.m = newMetrics()
 
-	svc.consumer = amqp.NewConsumer(notifConf)
-	if err := svc.consumer.Connect(); err != nil {
+	svc.consumer = Consumers{
+		Access:      amqp.NewConsumer(notifConf, sConf.Queue.AccessCampaign),
+		UserActions: amqp.NewConsumer(notifConf, sConf.Queue.UserActions),
+		ContentSent: amqp.NewConsumer(notifConf, sConf.Queue.ContentSent),
+		Operator:    amqp.NewConsumer(notifConf, sConf.Queue.TransactionLog),
+	}
+	if err := svc.consumer.Access.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
+	if err := svc.consumer.UserActions.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
+	if err := svc.consumer.ContentSent.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
+	if err := svc.consumer.Operator.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 
 	// access campaign queue
 	amqp.InitQueue(
-		svc.consumer,
+		svc.consumer.Access,
 		svc.accessCampaignChan,
 		processAccessCampaign,
 		sConf.ThreadsCount,
@@ -66,7 +80,7 @@ func InitService(
 
 	// content sent queue
 	amqp.InitQueue(
-		svc.consumer,
+		svc.consumer.ContentSent,
 		svc.contentSentChan,
 		processContentSent,
 		sConf.ThreadsCount,
@@ -76,7 +90,7 @@ func InitService(
 
 	// user actions queue
 	amqp.InitQueue(
-		svc.consumer,
+		svc.consumer.UserActions,
 		svc.userActionsChan,
 		processUserActions,
 		sConf.ThreadsCount,
@@ -86,7 +100,7 @@ func InitService(
 
 	// operator transactions queue
 	amqp.InitQueue(
-		svc.consumer,
+		svc.consumer.Operator,
 		svc.operatorTransactionLogChan,
 		operatorTransactions,
 		sConf.ThreadsCount,
@@ -97,7 +111,7 @@ func InitService(
 
 type Service struct {
 	db                         *sql.DB
-	consumer                   *amqp.Consumer
+	consumer                   Consumers
 	contentSentChan            <-chan amqp_driver.Delivery
 	accessCampaignChan         <-chan amqp_driver.Delivery
 	userActionsChan            <-chan amqp_driver.Delivery
@@ -108,6 +122,12 @@ type Service struct {
 	dbConf                     db.DataBaseConfig
 	tables                     map[string]struct{}
 	m                          Metrics
+}
+type Consumers struct {
+	Access      *amqp.Consumer
+	UserActions *amqp.Consumer
+	ContentSent *amqp.Consumer
+	Operator    *amqp.Consumer
 }
 type QueuesConfig struct {
 	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
