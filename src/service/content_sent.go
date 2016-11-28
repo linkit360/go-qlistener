@@ -57,12 +57,6 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
-		if t.SubscriptionId == 0 {
-			log.WithFields(log.Fields{
-				"tid": t.Tid,
-			}).Debug("subscription id is empty")
-		}
-
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
 			"sent_at, "+
 			"msisdn, "+
