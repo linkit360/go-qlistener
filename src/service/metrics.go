@@ -12,6 +12,7 @@ func newMetrics() Metrics {
 		ContentSent:    initContentSentMetrics(),
 		UserActions:    initUserActionsMetrics(),
 		Operator:       initOperatorsMetrics(),
+		MTManager:      initMtManagerMetrics(),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
@@ -29,6 +30,7 @@ type Metrics struct {
 	ContentSent    *contentSentMetrics
 	UserActions    *userActionsMetrics
 	Operator       *operatorMetrics
+	MTManager      *mtManagerMetrics
 }
 
 // Access Campaign metrics
@@ -100,6 +102,35 @@ func initContentSentMetrics() *contentSentMetrics {
 			m.AddToDBErrors.Update()
 			m.SubscriptionsAddToDBErrors.Update()
 			m.SubscriptionAddToDbSuccess.Update()
+		}
+	}()
+	return m
+}
+
+func newGaugeMTManager(name, help string) m.Gauge {
+	return m.NewGauge("", "mt_manager", name, "mt manager "+help)
+}
+
+type mtManagerMetrics struct {
+	Dropped        m.Gauge
+	Empty          m.Gauge
+	AddToDbSuccess m.Gauge
+	AddToDBErrors  m.Gauge
+}
+
+func initMtManagerMetrics() *mtManagerMetrics {
+	m := &mtManagerMetrics{
+		Dropped:        newGaugeMTManager("dropped", "dropped msgs"),
+		Empty:          newGaugeMTManager("empty", "empty msgs"),
+		AddToDbSuccess: newGaugeMTManager("add_to_db_success", "add to db errors"),
+		AddToDBErrors:  newGaugeMTManager("add_to_db_errors", "add to db errors"),
+	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
 		}
 	}()
 	return m

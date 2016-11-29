@@ -54,6 +54,7 @@ func InitService(
 		UserActions: amqp.NewConsumer(notifConf, sConf.Queue.UserActions),
 		ContentSent: amqp.NewConsumer(notifConf, sConf.Queue.ContentSent),
 		Operator:    amqp.NewConsumer(notifConf, sConf.Queue.TransactionLog),
+		MTManager:   amqp.NewConsumer(notifConf, sConf.Queue.MTManager),
 	}
 	if err := svc.consumer.Access.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
@@ -107,6 +108,14 @@ func InitService(
 		sConf.Queue.TransactionLog,
 		sConf.Queue.TransactionLog,
 	)
+	amqp.InitQueue(
+		svc.consumer.MTManager,
+		svc.mtManagerChan,
+		processMTManagerTasks,
+		sConf.ThreadsCount,
+		sConf.Queue.MTManager,
+		sConf.Queue.MTManager,
+	)
 }
 
 type Service struct {
@@ -116,6 +125,7 @@ type Service struct {
 	accessCampaignChan         <-chan amqp_driver.Delivery
 	userActionsChan            <-chan amqp_driver.Delivery
 	operatorTransactionLogChan <-chan amqp_driver.Delivery
+	mtManagerChan              <-chan amqp_driver.Delivery
 	ipDb                       *geoip2.Reader
 	uaparser                   *uaparser.Parser
 	sConfig                    ServiceConfig
@@ -128,12 +138,14 @@ type Consumers struct {
 	UserActions *amqp.Consumer
 	ContentSent *amqp.Consumer
 	Operator    *amqp.Consumer
+	MTManager   *amqp.Consumer
 }
 type QueuesConfig struct {
 	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
 	ContentSent    string `default:"content_sent" yaml:"content_sent"`
 	UserActions    string `default:"user_actions" yaml:"user_actions"`
 	TransactionLog string `default:"transaction_log" yaml:"transaction_log"`
+	MTManager      string `default:"mt_manager" yaml:"mt_manager"`
 }
 type ServiceConfig struct {
 	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
