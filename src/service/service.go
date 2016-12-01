@@ -68,6 +68,9 @@ func InitService(
 	if err := svc.consumer.Operator.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
+	if err := svc.consumer.MTManager.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
 
 	// access campaign queue
 	amqp.InitQueue(
