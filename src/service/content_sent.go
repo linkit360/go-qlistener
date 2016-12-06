@@ -8,6 +8,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/contentd/service"
+	"time"
 )
 
 type EventNotifyContentSent struct {
@@ -57,6 +58,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
+		begin := time.Now()
 		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
 			"sent_at, "+
 			"msisdn, "+
@@ -98,8 +100,9 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
+			"took":  time.Since(begin).String(),
 			"queue": "content_sent",
-		}).Info("processed successfully")
+		}).Info("success")
 		msg.Ack(false)
 	}
 }

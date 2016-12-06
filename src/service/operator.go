@@ -109,6 +109,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
+		begin := time.Now()
 		query := fmt.Sprintf("INSERT INTO %soperator_transaction_log ("+
 			"tid, "+
 			"msisdn, "+
@@ -160,8 +161,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		svc.m.Operator.AddToDbSuccess.Inc()
 
 		logCtx.WithFields(log.Fields{
-			"queue": "operator_transactions",
-		}).Info("processed successfully")
+			"tid":   t.Tid,
+			"took":  time.Since(begin).String(),
+			"queue": "operator_transaction_log",
+		}).Info("success")
 		msg.Ack(false)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
+	"time"
 )
 
 type EventNotifyUserActions struct {
@@ -49,6 +50,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 
+		begin := time.Now()
 		query := fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"access_at, "+
 			"tid, "+
@@ -80,8 +82,9 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
+			"took":  time.Since(begin).String(),
 			"queue": "user_actions",
-		}).Info("processed successfully")
+		}).Info("success")
 		msg.Ack(false)
 	}
 }

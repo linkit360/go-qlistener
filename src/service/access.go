@@ -9,6 +9,7 @@ import (
 
 	"github.com/vostrok/dispatcherd/src/rbmq"
 	inmem_client "github.com/vostrok/inmem/rpcclient"
+	"time"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -91,6 +92,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		device := ua.Device.ToString()
 		browser := ua.UserAgent.ToString()
 
+		begin := time.Now()
 		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
 			"access_at, "+
 			"msisdn, "+
@@ -177,8 +179,9 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 		logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,
+			"took":  time.Since(begin).String(),
 			"queue": "access_campaign",
-		}).Info("processed successfully")
+		}).Info("success")
 		msg.Ack(false)
 	}
 }
