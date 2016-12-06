@@ -51,14 +51,18 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		begin := time.Now()
 		query := fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"access_at, "+
+			"id_campaign, "+
+			"msisdn, "+
 			"tid, "+
 			"action, "+
 			"error "+
-			") values ($1, $2, $3, $4)",
+			") values ($1, $2, $3, $4, $5, $6)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
 			t.SentAt,
+			t.CampaignId,
+			t.Msisdn,
 			t.Tid,
 			t.Action,
 			t.Error,

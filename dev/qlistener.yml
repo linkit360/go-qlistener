@@ -17,6 +17,7 @@ service:
     content_sent: content_sent
     user_actions: user_actions
     transaction_log: transaction_log
+    mt_manager: mt_manager
 
 consumer:
   conn:

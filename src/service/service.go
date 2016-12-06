@@ -24,7 +24,7 @@ func InitService(
 	sConf ServiceConfig,
 	inMemConfig inmem_client.RPCClientConfig,
 	dbConf db.DataBaseConfig,
-	notifConf amqp.ConsumerConfig,
+	consumerConf amqp.ConsumerConfig,
 ) {
 	log.SetLevel(log.DebugLevel)
 
@@ -50,11 +50,12 @@ func InitService(
 	svc.m = newMetrics()
 
 	svc.consumer = Consumers{
-		Access:      amqp.NewConsumer(notifConf, sConf.Queue.AccessCampaign),
-		UserActions: amqp.NewConsumer(notifConf, sConf.Queue.UserActions),
-		ContentSent: amqp.NewConsumer(notifConf, sConf.Queue.ContentSent),
-		Operator:    amqp.NewConsumer(notifConf, sConf.Queue.TransactionLog),
-		MTManager:   amqp.NewConsumer(notifConf, sConf.Queue.MTManager),
+		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign),
+		UserActions: amqp.NewConsumer(consumerConf, sConf.Queue.UserActions),
+		ContentSent: amqp.NewConsumer(consumerConf, sConf.Queue.ContentSent),
+		Operator:    amqp.NewConsumer(consumerConf, sConf.Queue.TransactionLog),
+		MTManager:   amqp.NewConsumer(consumerConf, sConf.Queue.MTManager),
+		Pixels:      amqp.NewConsumer(consumerConf, sConf.Queue.PixelSent),
 	}
 	if err := svc.consumer.Access.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
@@ -69,6 +70,9 @@ func InitService(
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 	if err := svc.consumer.MTManager.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
+	if err := svc.consumer.Pixels.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 
@@ -111,6 +115,7 @@ func InitService(
 		sConf.Queue.TransactionLog,
 		sConf.Queue.TransactionLog,
 	)
+	// combined mt manager queue
 	amqp.InitQueue(
 		svc.consumer.MTManager,
 		svc.mtManagerChan,
@@ -118,6 +123,16 @@ func InitService(
 		sConf.ThreadsCount,
 		sConf.Queue.MTManager,
 		sConf.Queue.MTManager,
+	)
+
+	// combined mt manager queue
+	amqp.InitQueue(
+		svc.consumer.Pixels,
+		svc.pixelsChan,
+		processPixels,
+		sConf.ThreadsCount,
+		sConf.Queue.PixelSent,
+		sConf.Queue.PixelSent,
 	)
 }
 
@@ -129,6 +144,7 @@ type Service struct {
 	userActionsChan            <-chan amqp_driver.Delivery
 	operatorTransactionLogChan <-chan amqp_driver.Delivery
 	mtManagerChan              <-chan amqp_driver.Delivery
+	pixelsChan                 <-chan amqp_driver.Delivery
 	ipDb                       *geoip2.Reader
 	uaparser                   *uaparser.Parser
 	sConfig                    ServiceConfig
@@ -142,6 +158,7 @@ type Consumers struct {
 	ContentSent *amqp.Consumer
 	Operator    *amqp.Consumer
 	MTManager   *amqp.Consumer
+	Pixels      *amqp.Consumer
 }
 type QueuesConfig struct {
 	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
@@ -149,6 +166,7 @@ type QueuesConfig struct {
 	UserActions    string `default:"user_actions" yaml:"user_actions"`
 	TransactionLog string `default:"transaction_log" yaml:"transaction_log"`
 	MTManager      string `default:"mt_manager" yaml:"mt_manager"`
+	PixelSent      string `default:"pixel_sent" yaml:"pixel_sent"`
 }
 type ServiceConfig struct {
 	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
