@@ -29,8 +29,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 				"msg":         "dropped",
 				"contentSent": string(msg.Body),
 			}).Error("consume content sent")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		t := e.EventData
 
@@ -45,8 +44,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 				"msg":         "dropped",
 				"contentSent": string(msg.Body),
 			}).Error("consume content sent")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		// todo: add check for every field
 		if len(t.Msisdn) > 32 {
@@ -92,7 +90,15 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 				"msg":   "requeue",
 				"error": err.Error(),
 			}).Error("add sent content")
-			msg.Nack(false, true)
+		nack:
+			if err := msg.Nack(false, true); err != nil {
+				log.WithFields(log.Fields{
+					"tid":   e.EventData.Tid,
+					"error": err.Error(),
+				}).Error("cannot nack")
+				time.Sleep(time.Second)
+				goto nack
+			}
 			continue
 		}
 
@@ -103,6 +109,14 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			"took":  time.Since(begin).String(),
 			"queue": "content_sent",
 		}).Info("success")
-		msg.Ack(false)
+	ack:
+		if err := msg.Ack(false); err != nil {
+			log.WithFields(log.Fields{
+				"tid":   e.EventData.Tid,
+				"error": err.Error(),
+			}).Error("cannot ack")
+			time.Sleep(time.Second)
+			goto ack
+		}
 	}
 }

@@ -13,6 +13,7 @@ func newMetrics() Metrics {
 		UserActions:    initUserActionsMetrics(),
 		Operator:       initOperatorsMetrics(),
 		MTManager:      initMtManagerMetrics(),
+		Pixels:         initPixelMetrics(),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
@@ -31,6 +32,7 @@ type Metrics struct {
 	UserActions    *userActionsMetrics
 	Operator       *operatorMetrics
 	MTManager      *mtManagerMetrics
+	Pixels         *pixelMetrics
 }
 
 // Access Campaign metrics
@@ -191,6 +193,42 @@ func initOperatorsMetrics() *operatorMetrics {
 			m.Empty.Update()
 			m.AddToDbSuccess.Update()
 			m.AddToDBErrors.Update()
+		}
+	}()
+	return m
+}
+
+// pixel transaction log metrics
+func newGaugePixels(name, help string) m.Gauge {
+	return m.NewGauge("", "pixel", name, "pixel "+help)
+}
+
+type pixelMetrics struct {
+	Dropped                      m.Gauge
+	Empty                        m.Gauge
+	AddToDbSuccess               m.Gauge
+	AddToDBErrors                m.Gauge
+	UpdateSubscriptionSuccess    m.Gauge
+	UpdateSubscriptionToDBErrors m.Gauge
+}
+
+func initPixelMetrics() *pixelMetrics {
+	m := &pixelMetrics{
+		Dropped:                      newGaugePixels("dropped", "dropped msgs"),
+		Empty:                        newGaugePixels("empty", "empty msgs"),
+		AddToDbSuccess:               newGaugePixels("add_to_db_success", "create records count"),
+		AddToDBErrors:                newGaugePixels("add_to_db_errors", "create record: database errors"),
+		UpdateSubscriptionSuccess:    newGaugePixels("update_subscriptions_db_success", "pixels: update subscriptions success"),
+		UpdateSubscriptionToDBErrors: newGaugePixels("update_subscriptions_db_errors", "pixels: update subscriptions errors"),
+	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+			m.UpdateSubscriptionSuccess.Update()
+			m.UpdateSubscriptionToDBErrors.Update()
 		}
 	}()
 	return m

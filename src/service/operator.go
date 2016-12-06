@@ -44,8 +44,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "dropped",
 			}).Error("consume operator transaction")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		t := e.EventData
 
@@ -62,8 +61,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		if t.RequestBody == "" || t.ResponseBody == "" {
 			svc.m.Operator.Dropped.Inc()
 			svc.m.Operator.Empty.Inc()
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		if t.Tid == "" {
 			logCtx.Error("no tid")
@@ -155,7 +153,15 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"msg":   "requeue",
 				"query": query,
 			}).Error("add operator transaction failed")
-			msg.Nack(false, true)
+		nack:
+			if err := msg.Nack(false, true); err != nil {
+				log.WithFields(log.Fields{
+					"tid":   e.EventData.Tid,
+					"error": err.Error(),
+				}).Error("cannot nack")
+				time.Sleep(time.Second)
+				goto nack
+			}
 			continue
 		}
 		svc.m.Operator.AddToDbSuccess.Inc()
@@ -165,6 +171,14 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"took":  time.Since(begin).String(),
 			"queue": "operator_transaction_log",
 		}).Info("success")
-		msg.Ack(false)
+	ack:
+		if err := msg.Ack(false); err != nil {
+			log.WithFields(log.Fields{
+				"tid":   e.EventData.Tid,
+				"error": err.Error(),
+			}).Error("cannot ack")
+			time.Sleep(time.Second)
+			goto ack
+		}
 	}
 }

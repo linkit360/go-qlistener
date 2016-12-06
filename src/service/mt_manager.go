@@ -29,8 +29,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
 			}).Error("consume mt_manager")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		t := e.EventData
 
@@ -45,8 +44,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
 			}).Error("consume mt_manager")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 
 		var err error
@@ -73,8 +71,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
 			}).Error("consume mt_manager: unknown event")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 
 		if err != nil {
@@ -84,7 +81,15 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"rec":   string(msg.Body),
 			}).Error("consume mt_manager")
-			msg.Nack(false, true)
+		nack:
+			if err := msg.Nack(false, true); err != nil {
+				log.WithFields(log.Fields{
+					"tid":   e.EventData.Tid,
+					"error": err.Error(),
+				}).Error("cannot nack")
+				time.Sleep(time.Second)
+				goto nack
+			}
 			continue
 		}
 
@@ -94,7 +99,15 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			"tid":   t.Tid,
 			"queue": "content_sent",
 		}).Info("processed successfully")
-		msg.Ack(false)
+	ack:
+		if err := msg.Ack(false); err != nil {
+			log.WithFields(log.Fields{
+				"tid":   e.EventData.Tid,
+				"error": err.Error(),
+			}).Error("cannot ack")
+			time.Sleep(time.Second)
+			goto ack
+		}
 	}
 }
 
@@ -269,8 +282,9 @@ func startRetry(r rec.Record) (err error) {
 		"country_code, "+
 		"id_service, "+
 		"id_subscription, "+
-		"id_campaign "+
-		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		"id_campaign, "+
+		"price "+
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 		svc.dbConf.TablePrefix,
 	)
 	if _, err = svc.db.Exec(query,
@@ -282,7 +296,9 @@ func startRetry(r rec.Record) (err error) {
 		&r.CountryCode,
 		&r.ServiceId,
 		&r.SubscriptionId,
-		&r.CampaignId); err != nil {
+		&r.CampaignId,
+		&r.Price,
+	); err != nil {
 		svc.m.DbErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return

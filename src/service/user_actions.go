@@ -32,8 +32,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"msg":         "dropped",
 				"contentSent": string(msg.Body),
 			}).Error("consume user action ")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 
 		t := e.EventData
@@ -46,8 +45,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"msg":        "dropped",
 				"userAction": string(msg.Body),
 			}).Error("no tid or no action, strange row, discarding")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 
 		begin := time.Now()
@@ -74,7 +72,15 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"msg":   "requeue",
 				"error": err.Error(),
 			}).Error("add user action")
-			msg.Nack(false, true)
+		nack:
+			if err := msg.Nack(false, true); err != nil {
+				log.WithFields(log.Fields{
+					"tid":   e.EventData.Tid,
+					"error": err.Error(),
+				}).Error("cannot nack")
+				time.Sleep(time.Second)
+				goto nack
+			}
 			continue
 		}
 
@@ -85,6 +91,14 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			"took":  time.Since(begin).String(),
 			"queue": "user_actions",
 		}).Info("success")
-		msg.Ack(false)
+	ack:
+		if err := msg.Ack(false); err != nil {
+			log.WithFields(log.Fields{
+				"tid":   e.EventData.Tid,
+				"error": err.Error(),
+			}).Error("cannot ack")
+			time.Sleep(time.Second)
+			goto ack
+		}
 	}
 }

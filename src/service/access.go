@@ -31,8 +31,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"accessCampaign": string(msg.Body),
 				"msg":            "dropped",
 			}).Error("consume access campaign")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		t := e.EventData
 
@@ -60,8 +59,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"msg":   "dropped",
 				"tid":   t.Tid,
 			}).Error("no urlpath, strange row, discarding")
-			msg.Ack(false)
-			continue
+			goto ack
 		}
 		if t.CampaignId == 0 {
 			camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
@@ -172,7 +170,15 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"msg":   "requeue",
 				"query": query,
 			}).Error("add access campaign log failed")
-			msg.Nack(false, true)
+		nack:
+			if err := msg.Nack(false, true); err != nil {
+				log.WithFields(log.Fields{
+					"tid":   e.EventData.Tid,
+					"error": err.Error(),
+				}).Error("cannot nack")
+				time.Sleep(time.Second)
+				goto nack
+			}
 			continue
 		}
 		svc.m.AccessCampaign.AddToDbSuccess.Inc()
@@ -182,6 +188,15 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			"took":  time.Since(begin).String(),
 			"queue": "access_campaign",
 		}).Info("success")
-		msg.Ack(false)
+
+	ack:
+		if err := msg.Ack(false); err != nil {
+			log.WithFields(log.Fields{
+				"tid":   e.EventData.Tid,
+				"error": err.Error(),
+			}).Error("cannot ack")
+			time.Sleep(time.Second)
+			goto ack
+		}
 	}
 }
