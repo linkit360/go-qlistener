@@ -101,7 +101,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %scampaigns_access ("+
-			"access_at, "+
+			"sent_at, "+
 			"msisdn, "+
 			"tid, "+
 			"ip, "+
