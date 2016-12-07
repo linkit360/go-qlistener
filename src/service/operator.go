@@ -34,8 +34,11 @@ type EventNotifyOperatorTransaction struct {
 
 func operatorTransactions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-
 		log.WithField("body", string(msg.Body)).Debug("start process operator transaction")
+		var begin time.Time
+		var logCtx *log.Entry
+		var query string
+		var t OperatorTransactionLog
 
 		var e EventNotifyOperatorTransaction
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
@@ -46,9 +49,9 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			}).Error("consume operator transaction")
 			goto ack
 		}
-		t := e.EventData
+		t = e.EventData
 
-		logCtx := log.WithFields(log.Fields{
+		logCtx = log.WithFields(log.Fields{
 			"token": t.OperatorToken,
 			"tid":   t.Tid,
 		})
@@ -107,8 +110,8 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
-		begin := time.Now()
-		query := fmt.Sprintf("INSERT INTO %soperator_transaction_log ("+
+		begin = time.Now()
+		query = fmt.Sprintf("INSERT INTO %soperator_transaction_log ("+
 			"tid, "+
 			"msisdn, "+
 			"operator_code, "+

@@ -18,7 +18,7 @@ type EventNotifyPixel struct {
 
 func processPixels(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-
+		var t notifier.Pixel
 		log.WithFields(log.Fields{
 			"body": string(msg.Body),
 		}).Debug("start process")
@@ -35,7 +35,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 
 			goto ack
 		}
-		t := e.EventData
+		t = e.EventData
 
 		switch e.EventName {
 		case "transaction":

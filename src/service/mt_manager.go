@@ -19,8 +19,10 @@ type EventNotifyRec struct {
 func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
-
+		var err error
+		var t rec.Record
 		var e EventNotifyRec
+
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.MTManager.Dropped.Inc()
 
@@ -31,7 +33,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("consume mt_manager")
 			goto ack
 		}
-		t := e.EventData
+		t = e.EventData
 
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
@@ -46,8 +48,6 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("consume mt_manager")
 			goto ack
 		}
-
-		var err error
 		switch e.EventName {
 		case "StartRetry":
 			err = startRetry(t)

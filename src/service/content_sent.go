@@ -19,6 +19,9 @@ type EventNotifyContentSent struct {
 func processContentSent(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process")
+		var begin time.Time
+		var t service.ContentSentProperties
+		var query string
 
 		var e EventNotifyContentSent
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
@@ -31,7 +34,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			}).Error("consume content sent")
 			goto ack
 		}
-		t := e.EventData
+		t = e.EventData
 
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
@@ -56,8 +59,8 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 
-		begin := time.Now()
-		query := fmt.Sprintf("INSERT INTO %scontent_sent ("+
+		begin = time.Now()
+		query = fmt.Sprintf("INSERT INTO %scontent_sent ("+
 			"sent_at, "+
 			"msisdn, "+
 			"tid, "+

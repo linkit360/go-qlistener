@@ -23,7 +23,11 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			"body": string(msg.Body),
 		}).Debug("start process")
 
+		var query string
 		var e EventNotifyUserActions
+		var t rbmq.UserActionsNotify
+		var begin time.Time
+
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.UserActions.Dropped.Inc()
 
@@ -35,7 +39,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 
-		t := e.EventData
+		t = e.EventData
 		if t.Tid == "" || t.Action == "" {
 			svc.m.UserActions.Dropped.Inc()
 			svc.m.UserActions.Empty.Inc()
@@ -48,8 +52,8 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 
-		begin := time.Now()
-		query := fmt.Sprintf("INSERT INTO %suser_actions ("+
+		begin = time.Now()
+		query = fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"access_at, "+
 			"id_campaign, "+
 			"msisdn, "+

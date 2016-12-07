@@ -3,13 +3,14 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
+	"github.com/ua-parser/uap-go/uaparser"
 	"github.com/vostrok/dispatcherd/src/rbmq"
 	inmem_client "github.com/vostrok/inmem/rpcclient"
-	"time"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -20,10 +21,19 @@ type EventNotifyAccessCampaign struct {
 func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 	for msg := range deliveries {
-
 		log.WithField("body", string(msg.Body)).Debug("start process")
-
+		var logCtx *log.Entry
+		var ipInfo IpInfo
+		var err error
+		var os string
+		var device string
+		var browser string
+		var begin time.Time
+		var query string
+		var ua *uaparser.Client
 		var e EventNotifyAccessCampaign
+		var t rbmq.AccessCampaignNotify
+
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.AccessCampaign.Dropped.Inc()
 			log.WithFields(log.Fields{
@@ -33,9 +43,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}).Error("consume access campaign")
 			goto ack
 		}
-		t := e.EventData
-
-		logCtx := log.WithField("accessCampaign", t)
+		t = e.EventData
+		logCtx = log.WithField("accessCampaign", t)
 		if t.CampaignHash == "" {
 			logCtx.Error("no campaign hash")
 		}
@@ -74,7 +83,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}
 		}
 
-		ipInfo, err := geoIp(t.IP)
+		ipInfo, err = geoIp(t.IP)
 		if err != nil {
 			svc.m.AccessCampaign.ErrorsParseGeoIp.Inc()
 			log.WithFields(log.Fields{
@@ -85,13 +94,13 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 		err = nil
 
-		ua := svc.uaparser.Parse(t.UserAgent)
-		os := ua.Os.ToString()
-		device := ua.Device.ToString()
-		browser := ua.UserAgent.ToString()
+		ua = svc.uaparser.Parse(t.UserAgent)
+		os = ua.Os.ToString()
+		device = ua.Device.ToString()
+		browser = ua.UserAgent.ToString()
 
-		begin := time.Now()
-		query := fmt.Sprintf("INSERT INTO %scampaigns_access ("+
+		begin = time.Now()
+		query = fmt.Sprintf("INSERT INTO %scampaigns_access ("+
 			"access_at, "+
 			"msisdn, "+
 			"tid, "+
