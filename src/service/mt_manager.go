@@ -201,6 +201,7 @@ func removeRetry(r rec.Record) (err error) {
 		fields := log.Fields{
 			"tid":    r.Tid,
 			"msisdn": r.Msisdn,
+			"result": r.Result,
 			"took":   time.Since(begin),
 		}
 		if err != nil {

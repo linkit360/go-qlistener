@@ -13,6 +13,7 @@ import (
 
 	inmem_client "github.com/vostrok/inmem/rpcclient"
 	"github.com/vostrok/utils/amqp"
+	"github.com/vostrok/utils/config"
 	"github.com/vostrok/utils/db"
 )
 
@@ -50,12 +51,12 @@ func InitService(
 	svc.m = newMetrics()
 
 	svc.consumer = Consumers{
-		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign),
-		UserActions: amqp.NewConsumer(consumerConf, sConf.Queue.UserActions),
-		ContentSent: amqp.NewConsumer(consumerConf, sConf.Queue.ContentSent),
-		Operator:    amqp.NewConsumer(consumerConf, sConf.Queue.TransactionLog),
-		MTManager:   amqp.NewConsumer(consumerConf, sConf.Queue.MTManager),
-		Pixels:      amqp.NewConsumer(consumerConf, sConf.Queue.PixelSent),
+		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign.Name, sConf.Queue.AccessCampaign.PrefetchCount),
+		UserActions: amqp.NewConsumer(consumerConf, sConf.Queue.UserActions.Name, sConf.Queue.UserActions.PrefetchCount),
+		ContentSent: amqp.NewConsumer(consumerConf, sConf.Queue.ContentSent.Name, sConf.Queue.ContentSent.PrefetchCount),
+		Operator:    amqp.NewConsumer(consumerConf, sConf.Queue.TransactionLog.Name, sConf.Queue.TransactionLog.PrefetchCount),
+		MTManager:   amqp.NewConsumer(consumerConf, sConf.Queue.MTManager.Name, sConf.Queue.MTManager.PrefetchCount),
+		Pixels:      amqp.NewConsumer(consumerConf, sConf.Queue.PixelSent.Name, sConf.Queue.PixelSent.PrefetchCount),
 	}
 	if err := svc.consumer.Access.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
@@ -81,9 +82,9 @@ func InitService(
 		svc.consumer.Access,
 		svc.accessCampaignChan,
 		processAccessCampaign,
-		sConf.ThreadsCount,
-		sConf.Queue.AccessCampaign,
-		sConf.Queue.AccessCampaign,
+		sConf.Queue.AccessCampaign.ThreadsCount,
+		sConf.Queue.AccessCampaign.Name,
+		sConf.Queue.AccessCampaign.Name,
 	)
 
 	// content sent queue
@@ -91,9 +92,9 @@ func InitService(
 		svc.consumer.ContentSent,
 		svc.contentSentChan,
 		processContentSent,
-		sConf.ThreadsCount,
-		sConf.Queue.ContentSent,
-		sConf.Queue.ContentSent,
+		sConf.Queue.ContentSent.ThreadsCount,
+		sConf.Queue.ContentSent.Name,
+		sConf.Queue.ContentSent.Name,
 	)
 
 	// user actions queue
@@ -101,9 +102,9 @@ func InitService(
 		svc.consumer.UserActions,
 		svc.userActionsChan,
 		processUserActions,
-		sConf.ThreadsCount,
-		sConf.Queue.UserActions,
-		sConf.Queue.UserActions,
+		sConf.Queue.UserActions.ThreadsCount,
+		sConf.Queue.UserActions.Name,
+		sConf.Queue.UserActions.Name,
 	)
 
 	// operator transactions queue
@@ -111,18 +112,18 @@ func InitService(
 		svc.consumer.Operator,
 		svc.operatorTransactionLogChan,
 		operatorTransactions,
-		sConf.ThreadsCount,
-		sConf.Queue.TransactionLog,
-		sConf.Queue.TransactionLog,
+		sConf.Queue.TransactionLog.ThreadsCount,
+		sConf.Queue.TransactionLog.Name,
+		sConf.Queue.TransactionLog.Name,
 	)
 	// combined mt manager queue
 	amqp.InitQueue(
 		svc.consumer.MTManager,
 		svc.mtManagerChan,
 		processMTManagerTasks,
-		sConf.ThreadsCount,
-		sConf.Queue.MTManager,
-		sConf.Queue.MTManager,
+		sConf.Queue.MTManager.ThreadsCount,
+		sConf.Queue.MTManager.Name,
+		sConf.Queue.MTManager.Name,
 	)
 
 	// combined mt manager queue
@@ -130,9 +131,9 @@ func InitService(
 		svc.consumer.Pixels,
 		svc.pixelsChan,
 		processPixels,
-		sConf.ThreadsCount,
-		sConf.Queue.PixelSent,
-		sConf.Queue.PixelSent,
+		sConf.Queue.PixelSent.ThreadsCount,
+		sConf.Queue.PixelSent.Name,
+		sConf.Queue.PixelSent.Name,
 	)
 }
 
@@ -161,19 +162,18 @@ type Consumers struct {
 	Pixels      *amqp.Consumer
 }
 type QueuesConfig struct {
-	AccessCampaign string `default:"access_campaign" yaml:"access_campaign"`
-	ContentSent    string `default:"content_sent" yaml:"content_sent"`
-	UserActions    string `default:"user_actions" yaml:"user_actions"`
-	TransactionLog string `default:"transaction_log" yaml:"transaction_log"`
-	MTManager      string `default:"mt_manager" yaml:"mt_manager"`
-	PixelSent      string `default:"pixel_sent" yaml:"pixel_sent"`
+	AccessCampaign config.ConsumeQueueConfig `yaml:"access_campaign"`
+	ContentSent    config.ConsumeQueueConfig `yaml:"content_sent"`
+	UserActions    config.ConsumeQueueConfig `yaml:"user_actions"`
+	TransactionLog config.ConsumeQueueConfig `yaml:"transaction_log"`
+	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`
+	PixelSent      config.ConsumeQueueConfig `yaml:"pixel_sent"`
 }
+
 type ServiceConfig struct {
-	GeoIpPath             string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	SubscriptionsLoadDays int          `default:"10" yaml:"subscriptions_load_days"`
-	ThreadsCount          int          `default:"1" yaml:"threads_count"`
-	UAParserRegexesPath   string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
-	Queue                 QueuesConfig `yaml:"queue"`
+	GeoIpPath           string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	UAParserRegexesPath string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
+	Queue               QueuesConfig `yaml:"queues"`
 }
 
 type IpInfo struct {

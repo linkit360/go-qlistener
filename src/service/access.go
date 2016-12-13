@@ -71,15 +71,19 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 		if t.CampaignId == 0 {
-			camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
-			if err != nil {
-				svc.m.AccessCampaign.UnknownHash.Inc()
+			if t.CampaignHash != "" {
+				camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
+				if err != nil {
+					svc.m.AccessCampaign.UnknownHash.Inc()
 
-				err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
-				logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
+					err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
+					logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
+				} else {
+					t.CampaignId = camp.Id
+					t.ServiceId = camp.ServiceId
+				}
 			} else {
-				t.CampaignId = camp.Id
-				t.ServiceId = camp.ServiceId
+				logCtx.Error("campaign hash and id empty")
 			}
 		}
 

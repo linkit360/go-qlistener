@@ -9,15 +9,33 @@ inmem_client:
 
 service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
-  threads_count: 1
-  subscriptions_load_days: 5
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
-  queue:
-    access_campaign: access_campaign
-    content_sent: content_sent
-    user_actions: user_actions
-    transaction_log: transaction_log
-    mt_manager: mt_manager
+  queues:
+    access_campaign:
+      name: access_campaign
+      prefetch_count: 10
+      threads_count: 10
+    content_sent:
+      name: content_sent
+      prefetch_count: 10
+      threads_count: 10
+    user_actions:
+      name: user_actions
+      prefetch_count: 10
+      threads_count: 10
+    transaction_log:
+      name: transaction_log
+      prefetch_count: 10
+      threads_count: 10
+    mt_manager:
+      name: mt_manager
+      prefetch_count: 10
+      threads_count: 10
+    pixel_sent:
+      name: pixel_sent
+      prefetch_count: 10
+      threads_count: 10
+
 
 consumer:
   conn:
@@ -25,7 +43,6 @@ consumer:
       pass: dg-U_oHhy7-
       host: localhost
       port: 5672
-  queue_prefetch_count: 4
   binding_key: ""
   reconnect_delay: 10
 
