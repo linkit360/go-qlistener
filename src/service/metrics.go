@@ -131,7 +131,7 @@ type mtManagerMetrics struct {
 	AddToDBErrors                   m.Gauge
 }
 
-func newDuration(name string) m.Gauge {
+func newDuration(name string) prometheus.Summary {
 	return m.NewSummary(name+"_duration_seconds", name)
 }
 
