@@ -19,6 +19,8 @@ type EventNotifyPixel struct {
 func processPixels(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		var t notifier.Pixel
+		var begin time.Time
+
 		log.WithFields(log.Fields{
 			"body": string(msg.Body),
 		}).Debug("start process")
@@ -37,6 +39,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 
+		begin = time.Now()
 		switch e.EventName {
 		case "transaction":
 			query := fmt.Sprintf("INSERT INTO %spixel_transactions ( "+
@@ -143,6 +146,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			}).Error("consume mt_manager: unknown event")
 			goto ack
 		}
+
+		svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	ack:
 		if err := msg.Ack(false); err != nil {
 			log.WithFields(log.Fields{

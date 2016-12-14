@@ -195,6 +195,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			continue
 		}
 		svc.m.AccessCampaign.AddToDbSuccess.Inc()
+		svc.m.AccessCampaign.AddToDbDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,

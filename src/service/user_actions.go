@@ -93,6 +93,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		}
 
 		svc.m.UserActions.AddToDbSuccess.Inc()
+		svc.m.UserActions.AddToDBDuration.Observe(time.Since(begin).Seconds())
 
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,

@@ -156,6 +156,9 @@ func writeTransaction(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, Query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.WriteTransactionDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -192,6 +195,9 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -217,6 +223,8 @@ func removeRetry(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+	svc.m.MTManager.RemoveRetryDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -248,6 +256,9 @@ func touchRetry(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.TouchRetryDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -304,6 +315,9 @@ func startRetry(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.StartRetryDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -329,6 +343,9 @@ func addBlacklistedNumber(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.AddBlacklistedNumberDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -355,5 +372,8 @@ func addPostPaidNumber(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	svc.m.MTManager.AddPostPaidNumberDuration.Observe(time.Since(begin).Seconds())
+	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
