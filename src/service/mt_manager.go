@@ -48,6 +48,9 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("consume mt_manager")
 			goto ack
 		}
+		if t.SentAt.IsZero() {
+			t.SentAt = time.Now().UTC()
+		}
 		switch e.EventName {
 		case "StartRetry":
 			err = startRetry(t)
@@ -365,6 +368,7 @@ func addPostPaidNumber(r rec.Record) (err error) {
 			fields["error"] = err.Error()
 			fields["rec"] = fmt.Sprintf("%#v", r)
 		}
+		err = nil
 		log.WithFields(fields).Debug("add postpaid")
 	}()
 
