@@ -127,6 +127,7 @@ func writeTransaction(r rec.Record) (err error) {
 	}()
 	query := fmt.Sprintf("INSERT INTO %stransactions ("+
 		"tid, "+
+		"sent_at, "+
 		"msisdn, "+
 		"result, "+
 		"operator_code, "+
@@ -142,6 +143,7 @@ func writeTransaction(r rec.Record) (err error) {
 	if _, err = svc.db.Exec(
 		query,
 		r.Tid,
+		r.SentAt,
 		r.Msisdn,
 		r.Result,
 		r.OperatorCode,
@@ -274,8 +276,10 @@ func startRetry(r rec.Record) (err error) {
 		if err != nil {
 			fields["error"] = err.Error()
 			fields["rec"] = fmt.Sprintf("%#v", r)
+			log.WithFields(fields).Error("add retry")
+		} else {
+			log.WithFields(fields).Debug("add retry")
 		}
-		log.WithFields(fields).Debug("add retry")
 	}()
 	if r.KeepDays == 0 {
 		err = fmt.Errorf("Retry Keep Days required, service id: %s", r.ServiceId)

@@ -54,7 +54,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %suser_actions ("+
-			"access_at, "+
+			"sent_at, "+
 			"id_campaign, "+
 			"msisdn, "+
 			"tid, "+
