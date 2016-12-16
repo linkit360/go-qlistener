@@ -48,9 +48,6 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("consume mt_manager")
 			goto ack
 		}
-		if t.SentAt.IsZero() {
-			t.SentAt = time.Now().UTC()
-		}
 		switch e.EventName {
 		case "StartRetry":
 			err = startRetry(t)
@@ -94,14 +91,15 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				goto nack
 			}
 			continue
+		} else {
+			svc.m.MTManager.AddToDbSuccess.Inc()
+
+			log.WithFields(log.Fields{
+				"tid":   t.Tid,
+				"queue": "content_sent",
+			}).Info("processed successfully")
 		}
 
-		svc.m.MTManager.AddToDbSuccess.Inc()
-
-		log.WithFields(log.Fields{
-			"tid":   t.Tid,
-			"queue": "content_sent",
-		}).Info("processed successfully")
 	ack:
 		if err := msg.Ack(false); err != nil {
 			log.WithFields(log.Fields{
@@ -140,7 +138,7 @@ func writeTransaction(r rec.Record) (err error) {
 		"id_campaign, "+
 		"operator_token, "+
 		"price "+
-		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
 		svc.dbConf.TablePrefix,
 	)
 	if _, err = svc.db.Exec(
@@ -189,7 +187,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		svc.dbConf.TablePrefix,
 	)
 
-	lastPayAttemptAt := time.Now()
+	lastPayAttemptAt := r.SentAt
 	_, err = svc.db.Exec(query,
 		r.SubscriptionStatus,
 		lastPayAttemptAt,
@@ -248,7 +246,7 @@ func touchRetry(r rec.Record) (err error) {
 		log.WithFields(fields).Debug("touch retry")
 	}()
 
-	lastPayAttemptAt := time.Now()
+	lastPayAttemptAt := r.SentAt
 	query := fmt.Sprintf("UPDATE %sretries SET "+
 		"status = '', "+
 		"last_pay_attempt_at = $1, "+
