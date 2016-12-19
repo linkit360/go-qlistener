@@ -51,7 +51,14 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			}).Error("no tid or no action, strange row, discarding")
 			goto ack
 		}
-
+		if len(t.Msisdn) > 32 {
+			log.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long",
+				"tid":    t.Tid,
+			}).Error("strange msisdn, truncating")
+			t.Msisdn = t.Msisdn[:31]
+		}
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"sent_at, "+

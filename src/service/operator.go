@@ -25,6 +25,7 @@ type OperatorTransactionLog struct {
 	ResponseDecision string    `json:"response_decision,omitempty"`
 	ResponseCode     int       `json:"response_code,omitempty"`
 	SentAt           time.Time `json:"sent_at,omitempty"`
+	Type             string    `json:"type,omitempty"`
 }
 
 type EventNotifyOperatorTransaction struct {
