@@ -1,4 +1,5 @@
-name: mumbai_qlistener
+metric_instance_prefix: pk_mobilink1
+app_name: qlistener
 
 server:
   port: 50304

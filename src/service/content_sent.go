@@ -84,7 +84,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			svc.m.DbErrors.Inc()
+			svc.m.DBErrors.Inc()
 			svc.m.ContentSent.AddToDBErrors.Inc()
 
 			log.WithFields(log.Fields{

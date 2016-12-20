@@ -174,7 +174,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.IsSatelliteProvider,
 			ipInfo.AccuracyRadius,
 		); err != nil {
-			svc.m.DbErrors.Inc()
+			svc.m.DBErrors.Inc()
 			svc.m.AccessCampaign.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{

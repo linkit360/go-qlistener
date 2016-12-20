@@ -149,7 +149,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseCode,
 			t.SentAt,
 		); err != nil {
-			svc.m.DbErrors.Inc()
+			svc.m.DBErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{

@@ -8,19 +8,22 @@ import (
 	m "github.com/vostrok/utils/metrics"
 )
 
-func newMetrics() Metrics {
+var appName string
+
+func newMetrics(name string) Metrics {
+	appName = name
 	m := Metrics{
-		DbErrors:       m.NewGaugeAlert("", "", "db_errors", "db errors"),
+		DBErrors:       m.NewGauge("", "", "db_errors", "db errors"),
 		AccessCampaign: initAccessCampaignMetrics(),
 		ContentSent:    initContentSentMetrics(),
-		UserActions:    initUserActionsMetrics(),
-		Operator:       initOperatorsMetrics(),
 		MTManager:      initMtManagerMetrics(),
+		Operator:       initOperatorsMetrics(),
 		Pixels:         initPixelMetrics(),
+		UserActions:    initUserActionsMetrics(),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
-			m.DbErrors.Update()
+			m.DBErrors.Update()
 		}
 	}()
 	return m
@@ -28,7 +31,7 @@ func newMetrics() Metrics {
 
 // todo: add_to_db_success add_to_db_errors
 type Metrics struct {
-	DbErrors       m.Gauge
+	DBErrors       m.Gauge
 	AccessCampaign *accessCampaignMetrics
 	ContentSent    *contentSentMetrics
 	UserActions    *userActionsMetrics
@@ -49,13 +52,13 @@ type accessCampaignMetrics struct {
 }
 
 func newAddToDBDuration(name string) prometheus.Summary {
-	return m.NewSummary(name+"_add_to_db_duration_seconds", name+" duration seconds")
+	return m.NewSummary(appName+"_"+name+"_add_to_db_duration_seconds", name+" duration seconds")
 }
 func newUpdateDBDuration(name string) prometheus.Summary {
-	return m.NewSummary(name+"_update_db_duration_seconds", name+" duration seconds")
+	return m.NewSummary(appName+"_"+name+"_update_db_duration_seconds", name+" duration seconds")
 }
 func newGaugeAccessCampaign(name, help string) m.Gauge {
-	return m.NewGauge("", "access_campaign", ""+name, "access campaign "+help)
+	return m.NewGauge(appName, "access_campaign", ""+name, "access campaign "+help)
 }
 func initAccessCampaignMetrics() *accessCampaignMetrics {
 	m := &accessCampaignMetrics{
@@ -82,7 +85,7 @@ func initAccessCampaignMetrics() *accessCampaignMetrics {
 
 // Content Sent metrics
 func newGaugeContentSent(name, help string) m.Gauge {
-	return m.NewGauge("", "content_sent", name, "content sent "+help)
+	return m.NewGauge(appName, "content_sent", name, "content sent "+help)
 }
 
 type contentSentMetrics struct {
@@ -113,13 +116,14 @@ func initContentSentMetrics() *contentSentMetrics {
 }
 
 func newGaugeMTManager(name, help string) m.Gauge {
-	return m.NewGauge("", "mt_manager", name, "mt manager "+help)
+	return m.NewGauge(appName, "mt_manager", name, "mt manager "+help)
 }
 
 type mtManagerMetrics struct {
 	Dropped                         m.Gauge
 	Empty                           m.Gauge
 	AddToDbSuccess                  m.Gauge
+	AddToDBErrors                   m.Gauge
 	AddToDBDuration                 prometheus.Summary
 	AddBlacklistedNumberDuration    prometheus.Summary
 	AddPostPaidNumberDuration       prometheus.Summary
@@ -128,18 +132,18 @@ type mtManagerMetrics struct {
 	RemoveRetryDuration             prometheus.Summary
 	WriteSubscriptionStatusDuration prometheus.Summary
 	WriteTransactionDuration        prometheus.Summary
-	AddToDBErrors                   m.Gauge
 }
 
 func newDuration(name string) prometheus.Summary {
-	return m.NewSummary(name+"_duration_seconds", name)
+	return m.NewSummary(appName+"_"+name+"_duration_seconds", name)
 }
 
 func initMtManagerMetrics() *mtManagerMetrics {
 	m := &mtManagerMetrics{
 		Dropped:                         newGaugeMTManager("dropped", "dropped msgs"),
 		Empty:                           newGaugeMTManager("empty", "empty msgs"),
-		AddToDbSuccess:                  newGaugeMTManager("add_to_db_success", "add to db errors"),
+		AddToDbSuccess:                  newGaugeMTManager("add_to_db_success", "add to db success"),
+		AddToDBErrors:                   newGaugeMTManager("add_to_db_errors", "add to db errors"),
 		AddToDBDuration:                 newAddToDBDuration("mt_manager_db"),
 		AddBlacklistedNumberDuration:    newDuration("add_blacklisted_db"),
 		AddPostPaidNumberDuration:       newDuration("add_postpaid_db"),
@@ -148,7 +152,6 @@ func initMtManagerMetrics() *mtManagerMetrics {
 		RemoveRetryDuration:             newDuration("remove_retry_db"),
 		WriteSubscriptionStatusDuration: newDuration("write_subscription_status_db"),
 		WriteTransactionDuration:        newDuration("write_transaction_db"),
-		AddToDBErrors:                   newGaugeMTManager("add_to_db_errors", "add to db errors"),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
@@ -163,7 +166,7 @@ func initMtManagerMetrics() *mtManagerMetrics {
 
 // user actions metrics
 func newGaugeUserActions(name, help string) m.Gauge {
-	return m.NewGauge("", "user_actions", name, "user actions "+help)
+	return m.NewGauge(appName, "user_actions", name, "user actions "+help)
 }
 
 type userActionsMetrics struct {
@@ -195,7 +198,7 @@ func initUserActionsMetrics() *userActionsMetrics {
 
 // operator transaction log metrics
 func newGaugeOperator(name, help string) m.Gauge {
-	return m.NewGauge("", "operator", name, "operator transaction logs "+help)
+	return m.NewGauge(appName, "operator", name, "operator transaction logs "+help)
 }
 
 type operatorMetrics struct {
@@ -227,7 +230,7 @@ func initOperatorsMetrics() *operatorMetrics {
 
 // pixel transaction log metrics
 func newGaugePixels(name, help string) m.Gauge {
-	return m.NewGauge("", "pixel", name, "pixel "+help)
+	return m.NewGauge(appName, "pixel", name, "pixel "+help)
 }
 
 type pixelMetrics struct {

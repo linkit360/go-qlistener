@@ -78,7 +78,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			t.Action,
 			t.Error,
 		); err != nil {
-			svc.m.DbErrors.Inc()
+			svc.m.DBErrors.Inc()
 			svc.m.UserActions.AddToDBErrors.Inc()
 
 			log.WithFields(log.Fields{

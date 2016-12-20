@@ -22,6 +22,7 @@ var svc Service
 const ACTIVE_STATUS = 1
 
 func InitService(
+	appName string,
 	sConf ServiceConfig,
 	inMemConfig inmem_client.RPCClientConfig,
 	dbConf db.DataBaseConfig,
@@ -48,7 +49,7 @@ func InitService(
 		}).Fatal("User Agent Parser init")
 	}
 
-	svc.m = newMetrics()
+	svc.m = newMetrics(appName)
 
 	svc.consumer = Consumers{
 		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign.Name, sConf.Queue.AccessCampaign.PrefetchCount),

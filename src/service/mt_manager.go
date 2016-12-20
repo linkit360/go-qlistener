@@ -155,7 +155,7 @@ func writeTransaction(r rec.Record) (err error) {
 		r.OperatorToken,
 		int(r.Price),
 	); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, Query: %s", err.Error(), query)
 		return
 	}
@@ -194,7 +194,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		r.SubscriptionId,
 	)
 	if err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
@@ -222,7 +222,7 @@ func removeRetry(r rec.Record) (err error) {
 	query := fmt.Sprintf("DELETE FROM %sretries WHERE id = $1", svc.dbConf.TablePrefix)
 
 	if _, err = svc.db.Exec(query, r.RetryId); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
@@ -255,7 +255,7 @@ func touchRetry(r rec.Record) (err error) {
 		svc.dbConf.TablePrefix,
 	)
 	if _, err = svc.db.Exec(query, lastPayAttemptAt, r.RetryId); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
@@ -316,7 +316,7 @@ func startRetry(r rec.Record) (err error) {
 		&r.CampaignId,
 		&r.Price,
 	); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
@@ -344,7 +344,7 @@ func addBlacklistedNumber(r rec.Record) (err error) {
 	query := fmt.Sprintf("INSERT INTO  %smsisdn_blacklist ( msisdn ) VALUES ($1)", svc.dbConf.TablePrefix)
 
 	if _, err = svc.db.Exec(query, &r.Msisdn); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
@@ -374,7 +374,7 @@ func addPostPaidNumber(r rec.Record) (err error) {
 		svc.dbConf.TablePrefix,
 	)
 	if _, err = svc.db.Exec(query, &r.Msisdn); err != nil {
-		svc.m.DbErrors.Inc()
+		svc.m.DBErrors.Inc()
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
