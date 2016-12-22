@@ -19,17 +19,15 @@ import (
 
 var svc Service
 
-const ACTIVE_STATUS = 1
-
 func InitService(
-	appName string,
+	name string,
 	sConf ServiceConfig,
 	inMemConfig inmem_client.RPCClientConfig,
 	dbConf db.DataBaseConfig,
 	consumerConf amqp.ConsumerConfig,
 ) {
 	log.SetLevel(log.DebugLevel)
-
+	appName = name
 	inmem_client.Init(inMemConfig)
 	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf

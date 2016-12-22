@@ -219,7 +219,46 @@ func removeRetry(r rec.Record) (err error) {
 		}
 		log.WithFields(fields).Debug("remove retry")
 	}()
-	query := fmt.Sprintf("DELETE FROM %sretries WHERE id = $1", svc.dbConf.TablePrefix)
+	query := fmt.Sprintf(`INSERT INTO
+	%sretries_expired(
+		  status,
+		  tid ,
+		  created_at ,
+		  last_pay_attempt_at ,
+		  attempts_count ,
+		  keep_days ,
+		  delay_hours ,
+		  msisdn ,
+		  operator_code ,
+		  country_code ,
+		  id_service ,
+		  id_subscription ,
+		  id_campaign
+	)
+  	SELECT
+		  status,
+		  tid ,
+		  created_at ,
+		  last_pay_attempt_at ,
+		  attempts_count ,
+		  keep_days ,
+		  delay_hours ,
+		  msisdn ,
+		  operator_code ,
+		  country_code ,
+		  id_service ,
+		  id_subscription ,
+		  id_campaign
+  	FROM %sretries WHERE id = $1`,
+		svc.dbConf.TablePrefix,
+		svc.dbConf.TablePrefix,
+	)
+	if _, err = svc.db.Exec(query, r.RetryId); err != nil {
+		svc.m.DBErrors.Inc()
+		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
+		return
+	}
+	query = fmt.Sprintf("DELETE FROM %sretries WHERE id = $1", svc.dbConf.TablePrefix)
 
 	if _, err = svc.db.Exec(query, r.RetryId); err != nil {
 		svc.m.DBErrors.Inc()

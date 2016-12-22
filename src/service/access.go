@@ -103,6 +103,33 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		device = ua.Device.ToString()
 		browser = ua.UserAgent.ToString()
 
+		if len(os) > 127 {
+			logCtx.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long",
+				"tid":    t.Tid,
+				"os":     os,
+			}).Error("truncating")
+			os = os[:127]
+		}
+		if len(device) > 127 {
+			logCtx.WithFields(log.Fields{
+				"msisdn": t.Msisdn,
+				"error":  "too long",
+				"tid":    t.Tid,
+				"device": device,
+			}).Error("truncating")
+			device = device[:127]
+		}
+		if len(browser) > 127 {
+			logCtx.WithFields(log.Fields{
+				"msisdn":  t.Msisdn,
+				"error":   "too long",
+				"tid":     t.Tid,
+				"browser": browser,
+			}).Error("truncating")
+			browser = browser[:127]
+		}
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %scampaigns_access ("+
 			"sent_at, "+
