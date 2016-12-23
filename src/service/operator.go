@@ -171,6 +171,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 
 		svc.m.Operator.AddToDbSuccess.Inc()
 		svc.m.Operator.AddToDBDuration.Observe(time.Since(begin).Seconds())
+		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,

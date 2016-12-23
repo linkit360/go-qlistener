@@ -114,6 +114,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			); err != nil {
 				svc.m.DBErrors.Inc()
 				svc.m.Pixels.UpdateSubscriptionToDBErrors.Inc()
+
 				log.WithFields(log.Fields{
 					"tid":   t.Tid,
 					"pixel": t.Pixel,
@@ -150,6 +151,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		}
 
 		svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
+		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	ack:
 		if err := msg.Ack(false); err != nil {
 			log.WithFields(log.Fields{

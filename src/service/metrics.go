@@ -13,13 +13,14 @@ var appName string
 func newMetrics(name string) Metrics {
 	appName = name
 	m := Metrics{
-		DBErrors:       m.NewGauge("", "", "db_errors", "db errors"),
-		AccessCampaign: initAccessCampaignMetrics(),
-		ContentSent:    initContentSentMetrics(),
-		MTManager:      initMtManagerMetrics(),
-		Operator:       initOperatorsMetrics(),
-		Pixels:         initPixelMetrics(),
-		UserActions:    initUserActionsMetrics(),
+		DBErrors:         m.NewGauge("", "", "db_errors", "db errors"),
+		DBInsertDuration: m.NewSummary(appName+"_insert_db_duration_seconds", "db insert duration seconds"),
+		AccessCampaign:   initAccessCampaignMetrics(),
+		ContentSent:      initContentSentMetrics(),
+		MTManager:        initMtManagerMetrics(),
+		Operator:         initOperatorsMetrics(),
+		Pixels:           initPixelMetrics(),
+		UserActions:      initUserActionsMetrics(),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
@@ -31,13 +32,14 @@ func newMetrics(name string) Metrics {
 
 // todo: add_to_db_success add_to_db_errors
 type Metrics struct {
-	DBErrors       m.Gauge
-	AccessCampaign *accessCampaignMetrics
-	ContentSent    *contentSentMetrics
-	UserActions    *userActionsMetrics
-	Operator       *operatorMetrics
-	MTManager      *mtManagerMetrics
-	Pixels         *pixelMetrics
+	DBErrors         m.Gauge
+	DBInsertDuration prometheus.Summary
+	AccessCampaign   *accessCampaignMetrics
+	ContentSent      *contentSentMetrics
+	UserActions      *userActionsMetrics
+	Operator         *operatorMetrics
+	MTManager        *mtManagerMetrics
+	Pixels           *pixelMetrics
 }
 
 // Access Campaign metrics

@@ -107,6 +107,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 
 		svc.m.ContentSent.AddToDbSuccess.Inc()
 		svc.m.ContentSent.AddToDBDuration.Observe(time.Since(begin).Seconds())
+		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		log.WithFields(log.Fields{
 			"tid":   t.Tid,
