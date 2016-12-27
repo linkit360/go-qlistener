@@ -18,7 +18,10 @@ type EventNotifyContentSent struct {
 
 func processContentSent(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		log.WithField("body", string(msg.Body)).Debug("start process")
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.ContentSent.Name,
+		})
+		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var begin time.Time
 		var t service.ContentSentProperties
 		var query string
@@ -27,34 +30,35 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.ContentSent.Dropped.Inc()
 
-			log.WithFields(log.Fields{
-				"error":       err.Error(),
-				"msg":         "dropped",
-				"contentSent": string(msg.Body),
-			}).Error("consume content sent")
+			logCtx.WithFields(log.Fields{
+				"error": err.Error(),
+				"msg":   "dropped",
+				"body":  string(msg.Body),
+			}).Error("failed")
 			goto ack
 		}
 		t = e.EventData
-
+		logCtx = logCtx.WithFields(log.Fields{
+			"tid":    t.Tid,
+			"msisdn": t.Msisdn,
+		})
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
 			t.ContentId == 0 {
 			svc.m.ContentSent.Dropped.Inc()
 			svc.m.ContentSent.Empty.Inc()
 
-			log.WithFields(log.Fields{
-				"error":       "Empty message",
-				"msg":         "dropped",
-				"contentSent": string(msg.Body),
-			}).Error("consume content sent")
+			logCtx.WithFields(log.Fields{
+				"error": "Empty message",
+				"msg":   "dropped",
+				"body":  string(msg.Body),
+			}).Error("failed")
 			goto ack
 		}
 		// todo: add check for every field
 		if len(t.Msisdn) > 32 {
-			log.WithFields(log.Fields{
-				"msisdn": t.Msisdn,
-				"error":  "too long msisdn",
-				"tid":    t.Tid,
+			logCtx.WithFields(log.Fields{
+				"error": "too long msisdn",
 			}).Error("strange msisdn, truncating")
 			t.Msisdn = t.Msisdn[:31]
 		}
@@ -87,16 +91,14 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			svc.m.DBErrors.Inc()
 			svc.m.ContentSent.AddToDBErrors.Inc()
 
-			log.WithFields(log.Fields{
-				"tid":   t.Tid,
+			logCtx.WithFields(log.Fields{
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
-			}).Error("add sent content")
+			}).Error("add sent content failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
-				log.WithFields(log.Fields{
-					"tid":   e.EventData.Tid,
+				logCtx.WithFields(log.Fields{
 					"error": err.Error(),
 				}).Error("cannot nack")
 				time.Sleep(time.Second)
@@ -109,15 +111,12 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		svc.m.ContentSent.AddToDBDuration.Observe(time.Since(begin).Seconds())
 		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
-		log.WithFields(log.Fields{
-			"tid":   t.Tid,
-			"took":  time.Since(begin).String(),
-			"queue": "content_sent",
+		logCtx.WithFields(log.Fields{
+			"took": time.Since(begin).String(),
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)

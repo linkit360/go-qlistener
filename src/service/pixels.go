@@ -20,8 +20,11 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		var t notifier.Pixel
 		var begin time.Time
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.PixelSent.Name,
+		})
 
-		log.WithFields(log.Fields{
+		logCtx.WithFields(log.Fields{
 			"body": string(msg.Body),
 		}).Debug("start process")
 
@@ -29,15 +32,19 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.Pixels.Dropped.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
 				"pixel": string(msg.Body),
-			}).Error("consume pixel")
+			}).Error("failed")
 
 			goto ack
 		}
 		t = e.EventData
+		logCtx = logCtx.WithFields(log.Fields{
+			"tid":   t.Tid,
+			"pixel": t.Pixel,
+		})
 
 		begin = time.Now()
 		switch e.EventName {
@@ -72,17 +79,14 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				svc.m.DBErrors.Inc()
 				svc.m.Pixels.AddToDBErrors.Inc()
 
-				log.WithFields(log.Fields{
-					"tid":   t.Tid,
-					"pixel": t.Pixel,
+				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
 					"msg":   "dropped",
-				}).Error("record pixel transaction failed")
+				}).Error("pixel transaction failed")
 			nackTransaction:
 				if err := msg.Nack(false, true); err != nil {
-					log.WithFields(log.Fields{
-						"tid":   e.EventData.Tid,
+					logCtx.WithFields(log.Fields{
 						"error": err.Error(),
 					}).Error("cannot nack")
 					time.Sleep(time.Second)
@@ -91,10 +95,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				continue
 			} else {
 				log.WithFields(log.Fields{
-					"tid":   t.Tid,
-					"pixel": t.Pixel,
-					"took":  time.Since(begin),
-				}).Info("add pixel: success")
+					"took": time.Since(begin),
+				}).Info("pixel transaction success")
 			}
 
 		case "update":
@@ -115,17 +117,14 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				svc.m.DBErrors.Inc()
 				svc.m.Pixels.UpdateSubscriptionToDBErrors.Inc()
 
-				log.WithFields(log.Fields{
-					"tid":   t.Tid,
-					"pixel": t.Pixel,
+				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
 				}).Error("update subscription pixel sent")
 
 			nackSubscriptions:
 				if err := msg.Nack(false, true); err != nil {
-					log.WithFields(log.Fields{
-						"tid":   e.EventData.Tid,
+					logCtx.WithFields(log.Fields{
 						"error": err.Error(),
 					}).Error("cannot nack")
 					time.Sleep(time.Second)
@@ -133,20 +132,17 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				}
 				continue
 			} else {
-				log.WithFields(log.Fields{
-					"tid":   t.Tid,
-					"pixel": t.Pixel,
-					"took":  time.Since(begin),
-				}).Info("update subscrption: success")
+				logCtx.WithFields(log.Fields{
+					"took": time.Since(begin),
+				}).Info("update subscrption pixel: success")
 			}
 		default:
-			svc.m.MTManager.Dropped.Inc()
+			svc.m.Pixels.Dropped.Inc()
 
 			log.WithFields(log.Fields{
 				"event": e.EventName,
 				"msg":   "dropped",
-				"rec":   string(msg.Body),
-			}).Error("consume mt_manager: unknown event")
+			}).Error("consume pixels: unknown event")
 			goto ack
 		}
 
@@ -154,8 +150,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)

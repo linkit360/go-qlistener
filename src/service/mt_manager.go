@@ -18,7 +18,10 @@ type EventNotifyRec struct {
 
 func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		log.WithField("body", string(msg.Body)).Debug("start process")
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.MTManager.Name,
+		})
+		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var err error
 		var t rec.Record
 		var e EventNotifyRec
@@ -26,11 +29,11 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.MTManager.Dropped.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
-			}).Error("consume mt_manager")
+			}).Error("failed")
 			goto ack
 		}
 		t = e.EventData
@@ -41,13 +44,16 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
-			}).Error("consume mt_manager")
+			}).Error("failed")
 			goto ack
 		}
+		logCtx = logCtx.WithFields(log.Fields{
+			"tid": t.Tid,
+		})
 		switch e.EventName {
 		case "StartRetry":
 			err = startRetry(t)
@@ -66,11 +72,11 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		default:
 			svc.m.MTManager.Dropped.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"event": e.EventName,
 				"msg":   "dropped",
 				"rec":   string(msg.Body),
-			}).Error("consume mt_manager: unknown event")
+			}).Error("unknown event")
 			goto ack
 		}
 
@@ -78,20 +84,11 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			svc.m.DBErrors.Inc()
 			svc.m.MTManager.AddToDBErrors.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"event": e.EventName,
 				"error": err.Error(),
-				"rec":   string(msg.Body),
-			}).Error("consume mt_manager")
-		nack:
-			if err := msg.Nack(false, true); err != nil {
-				log.WithFields(log.Fields{
-					"tid":   e.EventData.Tid,
-					"error": err.Error(),
-				}).Error("cannot nack")
-				time.Sleep(time.Second)
-				goto nack
-			}
+			}).Error("failed")
+			msg.Nack(false, true)
 			continue
 		} else {
 			svc.m.MTManager.AddToDbSuccess.Inc()
@@ -99,8 +96,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)

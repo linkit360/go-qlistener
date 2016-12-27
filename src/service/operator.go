@@ -37,7 +37,9 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		log.WithField("body", string(msg.Body)).Debug("start process operator transaction")
 		var begin time.Time
-		var logCtx *log.Entry
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.TransactionLog.Name,
+		})
 		var query string
 		var t OperatorTransactionLog
 
@@ -47,14 +49,16 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
-			}).Error("consume operator transaction")
+				"body":  string(msg.Body),
+			}).Error("consume")
 			goto ack
 		}
 		t = e.EventData
 
 		logCtx = log.WithFields(log.Fields{
-			"token": t.OperatorToken,
-			"tid":   t.Tid,
+			"token":  t.OperatorToken,
+			"tid":    t.Tid,
+			"msisdn": t.Msisdn,
 		})
 		if t.RequestBody == "" {
 			logCtx.Error("no request body")
@@ -101,11 +105,13 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		// todo: add check for every field
 		if len(t.Msisdn) > 32 {
 			logCtx.WithFields(log.Fields{
-				"msisdn": t.Msisdn,
-				"error":  "too long",
-				"tid":    t.Tid,
+				"error": "too long",
 			}).Error("strange msisdn, truncating")
 			t.Msisdn = t.Msisdn[:31]
+		}
+		if t.Type == "" {
+			logCtx.Error("no transaction type")
+			t.Type = "charge"
 		}
 
 		begin = time.Now()
@@ -156,11 +162,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
-			}).Error("add operator transaction failed")
+			}).Error("add operator transaction log failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
-				log.WithFields(log.Fields{
-					"tid":   e.EventData.Tid,
+				logCtx.WithFields(log.Fields{
 					"error": err.Error(),
 				}).Error("cannot nack")
 				time.Sleep(time.Second)
@@ -174,14 +179,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
-			"tid":   t.Tid,
-			"took":  time.Since(begin).String(),
-			"queue": "operator_transaction_log",
+			"took": time.Since(begin).String(),
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)

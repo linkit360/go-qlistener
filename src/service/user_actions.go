@@ -19,7 +19,11 @@ type EventNotifyUserActions struct {
 func processUserActions(deliveries <-chan amqp.Delivery) {
 
 	for msg := range deliveries {
-		log.WithFields(log.Fields{
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.UserActions.Name,
+		})
+
+		logCtx.WithFields(log.Fields{
 			"body": string(msg.Body),
 		}).Debug("start process")
 
@@ -32,10 +36,10 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			svc.m.UserActions.Dropped.Inc()
 
 			log.WithFields(log.Fields{
-				"error":       err.Error(),
-				"msg":         "dropped",
-				"contentSent": string(msg.Body),
-			}).Error("consume user action ")
+				"error": err.Error(),
+				"msg":   "dropped",
+				"body":  string(msg.Body),
+			}).Error("consume")
 			goto ack
 		}
 
@@ -44,18 +48,20 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			svc.m.UserActions.Dropped.Inc()
 			svc.m.UserActions.Empty.Inc()
 
-			log.WithFields(log.Fields{
-				"error":      "Empty message",
-				"msg":        "dropped",
-				"userAction": string(msg.Body),
+			logCtx.WithFields(log.Fields{
+				"error": "Empty message",
+				"msg":   "dropped",
+				"body":  string(msg.Body),
 			}).Error("no tid or no action, strange row, discarding")
 			goto ack
 		}
+		logCtx = logCtx.WithFields(log.Fields{
+			"tid": t.Tid,
+		})
 		if len(t.Msisdn) > 32 {
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"msisdn": t.Msisdn,
 				"error":  "too long",
-				"tid":    t.Tid,
 			}).Error("strange msisdn, truncating")
 			t.Msisdn = t.Msisdn[:31]
 		}
@@ -81,21 +87,12 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			svc.m.DBErrors.Inc()
 			svc.m.UserActions.AddToDBErrors.Inc()
 
-			log.WithFields(log.Fields{
-				"tid":   t.Tid,
+			logCtx.WithFields(log.Fields{
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
-			}).Error("add user action")
-		nack:
-			if err := msg.Nack(false, true); err != nil {
-				log.WithFields(log.Fields{
-					"tid":   e.EventData.Tid,
-					"error": err.Error(),
-				}).Error("cannot nack")
-				time.Sleep(time.Second)
-				goto nack
-			}
+			}).Error("add user action failed")
+			msg.Nack(false, true)
 			continue
 		}
 
@@ -103,15 +100,12 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		svc.m.UserActions.AddToDBDuration.Observe(time.Since(begin).Seconds())
 		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
-		log.WithFields(log.Fields{
-			"tid":   t.Tid,
-			"took":  time.Since(begin).String(),
-			"queue": "user_actions",
+		logCtx.WithFields(log.Fields{
+			"took": time.Since(begin).String(),
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)

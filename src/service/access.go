@@ -21,8 +21,10 @@ type EventNotifyAccessCampaign struct {
 func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 	for msg := range deliveries {
-		log.WithField("body", string(msg.Body)).Debug("start process")
-		var logCtx *log.Entry
+		logCtx := log.WithFields(log.Fields{
+			"q": svc.sConfig.Queue.AccessCampaign.Name,
+		})
+		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var ipInfo IpInfo
 		var err error
 		var os string
@@ -36,15 +38,18 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.AccessCampaign.Dropped.Inc()
-			log.WithFields(log.Fields{
-				"error":          err.Error(),
-				"accessCampaign": string(msg.Body),
-				"msg":            "dropped",
-			}).Error("consume access campaign")
+			logCtx.WithFields(log.Fields{
+				"error": err.Error(),
+				"body":  string(msg.Body),
+				"msg":   "dropped",
+			}).Error("failed")
 			goto ack
 		}
 		t = e.EventData
-		logCtx = log.WithField("accessCampaign", t)
+		logCtx = logCtx.WithFields(log.Fields{
+			"tid":    t.Tid,
+			"msisdn": t.Msisdn,
+		})
 		if t.CampaignHash == "" {
 			logCtx.Error("no campaign hash")
 		}
@@ -54,9 +59,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		// todo: add check for every field
 		if len(t.Msisdn) > 32 {
 			logCtx.WithFields(log.Fields{
-				"msisdn": t.Msisdn,
-				"error":  "too long",
-				"tid":    t.Tid,
+				"error": "msisdn is too long",
 			}).Error("strange msisdn, truncating")
 			t.Msisdn = t.Msisdn[:31]
 		}
@@ -66,7 +69,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
-				"tid":   t.Tid,
 			}).Error("no urlpath, strange row, discarding")
 			goto ack
 		}
@@ -90,8 +92,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		ipInfo, err = geoIp(t.IP)
 		if err != nil {
 			svc.m.AccessCampaign.ErrorsParseGeoIp.Inc()
-			log.WithFields(log.Fields{
-				"tid":      t.Tid,
+			logCtx.WithFields(log.Fields{
 				"IP":       t.IP,
 				"parseErr": err.Error(),
 			}).Debug("parse geo ip city, continued..")
@@ -105,27 +106,21 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 
 		if len(os) > 127 {
 			logCtx.WithFields(log.Fields{
-				"msisdn": t.Msisdn,
-				"error":  "too long",
-				"tid":    t.Tid,
-				"os":     os,
+				"error": "os is too long",
+				"os":    os,
 			}).Error("truncating")
 			os = os[:127]
 		}
 		if len(device) > 127 {
 			logCtx.WithFields(log.Fields{
-				"msisdn": t.Msisdn,
-				"error":  "too long",
-				"tid":    t.Tid,
+				"error":  "device is too long",
 				"device": device,
 			}).Error("truncating")
 			device = device[:127]
 		}
 		if len(browser) > 127 {
 			logCtx.WithFields(log.Fields{
-				"msisdn":  t.Msisdn,
-				"error":   "too long",
-				"tid":     t.Tid,
+				"error":   "browser is too long",
 				"browser": browser,
 			}).Error("truncating")
 			browser = browser[:127]
@@ -205,15 +200,13 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			svc.m.AccessCampaign.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
-				"tid":   t.Tid,
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
-			}).Error("add access campaign log failed")
+			}).Error("add access campaign failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
-				log.WithFields(log.Fields{
-					"tid":   e.EventData.Tid,
+				logCtx.WithFields(log.Fields{
 					"error": err.Error(),
 				}).Error("cannot nack")
 				time.Sleep(time.Second)
@@ -226,15 +219,12 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
-			"tid":   t.Tid,
-			"took":  time.Since(begin).String(),
-			"queue": "access_campaign",
+			"took": time.Since(begin).String(),
 		}).Info("success")
 
 	ack:
 		if err := msg.Ack(false); err != nil {
-			log.WithFields(log.Fields{
-				"tid":   e.EventData.Tid,
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
 			time.Sleep(time.Second)
