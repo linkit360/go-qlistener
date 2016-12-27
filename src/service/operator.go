@@ -62,9 +62,12 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		if t.ResponseBody == "" {
 			logCtx.Error("no response body")
 		}
-		if t.RequestBody == "" || t.ResponseBody == "" {
+		if t.RequestBody == "" && t.ResponseBody == "" {
 			svc.m.Operator.Dropped.Inc()
 			svc.m.Operator.Empty.Inc()
+
+			logCtx.WithField("dropped", true).
+				Error("no response body and no request body")
 			goto ack
 		}
 		if t.Tid == "" {
@@ -76,27 +79,21 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		if t.OperatorCode == 0 {
 			logCtx.Error("no operator code")
 		}
-
 		if t.CountryCode == 0 {
 			logCtx.Error("no country code")
 		}
-
 		if t.Price == 0 {
 			logCtx.Error("no price")
 		}
-
 		if t.ServiceId == 0 {
 			logCtx.Error("no service id")
 		}
-
 		if t.SubscriptionId == 0 {
 			logCtx.Error("no subscription id")
 		}
-
 		if t.CampaignId == 0 {
 			logCtx.Error("no campaign id")
 		}
-
 		if t.ResponseCode == 0 {
 			logCtx.Error("no response code")
 		}
