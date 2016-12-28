@@ -35,7 +35,6 @@ type EventNotifyOperatorTransaction struct {
 
 func operatorTransactions(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
-		log.WithField("body", string(msg.Body)).Debug("start process operator transaction")
 		var begin time.Time
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.TransactionLog.Name,
@@ -50,15 +49,13 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "dropped",
 				"body":  string(msg.Body),
-			}).Error("consume")
+			}).Error("failed")
 			goto ack
 		}
 		t = e.EventData
 
 		logCtx = log.WithFields(log.Fields{
-			"token":  t.OperatorToken,
-			"tid":    t.Tid,
-			"msisdn": t.Msisdn,
+			"tid": t.Tid,
 		})
 		if t.RequestBody == "" {
 			logCtx.Error("no request body")
@@ -106,7 +103,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		if len(t.Msisdn) > 32 {
 			logCtx.WithFields(log.Fields{
 				"error": "too long",
-			}).Error("strange msisdn, truncating")
+			}).Error("strange msisdn")
 			t.Msisdn = t.Msisdn[:31]
 		}
 		if t.Type == "" {
@@ -162,7 +159,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
-			}).Error("add operator transaction log failed")
+			}).Error("failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
 				logCtx.WithFields(log.Fields{

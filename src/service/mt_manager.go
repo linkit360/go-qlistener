@@ -21,7 +21,6 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.MTManager.Name,
 		})
-		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var err error
 		var t rec.Record
 		var e EventNotifyRec
@@ -109,15 +108,16 @@ func writeTransaction(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
-			fields["rec"] = fmt.Sprintf("%#v", r)
+			log.WithFields(fields).Error("write transaction")
+		} else {
+			log.WithFields(fields).Debug("write transaction")
 		}
-		log.WithFields(fields).Debug("write transaction")
+
 	}()
 	query := fmt.Sprintf("INSERT INTO %stransactions ("+
 		"tid, "+
@@ -162,9 +162,8 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
@@ -202,15 +201,15 @@ func removeRetry(r rec.Record) (err error) {
 	defer func() {
 		fields := log.Fields{
 			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
 			"result": r.Result,
 			"took":   time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
-			fields["rec"] = fmt.Sprintf("%#v", r)
+			log.WithFields(fields).Error("remove retry")
+		} else {
+			log.WithFields(fields).Debug("remove retry")
 		}
-		log.WithFields(fields).Debug("remove retry")
 	}()
 	query := fmt.Sprintf(`INSERT INTO
 	%sretries_expired(
@@ -266,9 +265,8 @@ func touchRetry(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
@@ -301,9 +299,8 @@ func startRetry(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
@@ -361,9 +358,8 @@ func addBlacklistedNumber(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
@@ -389,9 +385,8 @@ func addPostPaidNumber(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"msisdn": r.Msisdn,
-			"took":   time.Since(begin),
+			"tid":  r.Tid,
+			"took": time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()

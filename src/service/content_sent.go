@@ -21,7 +21,6 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.ContentSent.Name,
 		})
-		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var begin time.Time
 		var t service.ContentSentProperties
 		var query string
@@ -39,8 +38,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 		logCtx = logCtx.WithFields(log.Fields{
-			"tid":    t.Tid,
-			"msisdn": t.Msisdn,
+			"tid": t.Tid,
 		})
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
@@ -58,8 +56,9 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		// todo: add check for every field
 		if len(t.Msisdn) > 32 {
 			logCtx.WithFields(log.Fields{
-				"error": "too long msisdn",
-			}).Error("strange msisdn, truncating")
+				"msisdn": t.Msisdn,
+				"error":  "too long msisdn",
+			}).Error("strange msisdn")
 			t.Msisdn = t.Msisdn[:31]
 		}
 
@@ -95,7 +94,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
-			}).Error("add sent content failed")
+			}).Error("failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
 				logCtx.WithFields(log.Fields{

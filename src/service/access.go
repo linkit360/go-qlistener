@@ -24,7 +24,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.AccessCampaign.Name,
 		})
-		logCtx.WithField("body", string(msg.Body)).Debug("start process")
 		var ipInfo IpInfo
 		var err error
 		var os string
@@ -47,8 +46,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 		logCtx = logCtx.WithFields(log.Fields{
-			"tid":    t.Tid,
-			"msisdn": t.Msisdn,
+			"tid": t.Tid,
 		})
 		if t.CampaignHash == "" {
 			logCtx.Error("no campaign hash")
@@ -69,7 +67,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
-			}).Error("no urlpath, strange row, discarding")
+			}).Error("no urlpath")
 			goto ack
 		}
 		if t.CampaignId == 0 {
@@ -203,7 +201,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
-			}).Error("add access campaign failed")
+			}).Error("failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {
 				logCtx.WithFields(log.Fields{

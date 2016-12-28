@@ -23,11 +23,6 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.PixelSent.Name,
 		})
-
-		logCtx.WithFields(log.Fields{
-			"body": string(msg.Body),
-		}).Debug("start process")
-
 		var e EventNotifyPixel
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.Pixels.Dropped.Inc()
@@ -35,7 +30,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
-				"pixel": string(msg.Body),
+				"body":  string(msg.Body),
 			}).Error("failed")
 
 			goto ack
@@ -43,7 +38,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		t = e.EventData
 		logCtx = logCtx.WithFields(log.Fields{
 			"tid":   t.Tid,
-			"pixel": t.Pixel,
+			"event": e.EventName,
 		})
 
 		begin = time.Now()
@@ -83,7 +78,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"query": query,
 					"error": err.Error(),
 					"msg":   "dropped",
-				}).Error("pixel transaction failed")
+				}).Error("failed")
 			nackTransaction:
 				if err := msg.Nack(false, true); err != nil {
 					logCtx.WithFields(log.Fields{
@@ -96,7 +91,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			} else {
 				log.WithFields(log.Fields{
 					"took": time.Since(begin),
-				}).Info("pixel transaction success")
+				}).Info("success")
 			}
 
 		case "update":
@@ -120,21 +115,14 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
-				}).Error("update subscription pixel sent")
+				}).Error("failed")
 
-			nackSubscriptions:
-				if err := msg.Nack(false, true); err != nil {
-					logCtx.WithFields(log.Fields{
-						"error": err.Error(),
-					}).Error("cannot nack")
-					time.Sleep(time.Second)
-					goto nackSubscriptions
-				}
+				msg.Nack(false, true)
 				continue
 			} else {
 				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
-				}).Info("update subscrption pixel: success")
+				}).Info("success")
 			}
 		default:
 			svc.m.Pixels.Dropped.Inc()
@@ -142,7 +130,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			log.WithFields(log.Fields{
 				"event": e.EventName,
 				"msg":   "dropped",
-			}).Error("consume pixels: unknown event")
+			}).Error("unknown event")
 			goto ack
 		}
 

@@ -22,11 +22,6 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		logCtx := log.WithFields(log.Fields{
 			"q": svc.sConfig.Queue.UserActions.Name,
 		})
-
-		logCtx.WithFields(log.Fields{
-			"body": string(msg.Body),
-		}).Debug("start process")
-
 		var query string
 		var e EventNotifyUserActions
 		var t rbmq.UserActionsNotify
@@ -39,7 +34,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "dropped",
 				"body":  string(msg.Body),
-			}).Error("consume")
+			}).Error("failed")
 			goto ack
 		}
 
@@ -52,7 +47,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"error": "Empty message",
 				"msg":   "dropped",
 				"body":  string(msg.Body),
-			}).Error("no tid or no action, strange row, discarding")
+			}).Error("discarding")
 			goto ack
 		}
 		logCtx = logCtx.WithFields(log.Fields{
@@ -61,8 +56,8 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		if len(t.Msisdn) > 32 {
 			logCtx.WithFields(log.Fields{
 				"msisdn": t.Msisdn,
-				"error":  "too long",
-			}).Error("strange msisdn, truncating")
+				"error":  "strange msisdn",
+			}).Error("")
 			t.Msisdn = t.Msisdn[:31]
 		}
 		begin = time.Now()
@@ -91,7 +86,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
-			}).Error("add user action failed")
+			}).Error("failed")
 			msg.Nack(false, true)
 			continue
 		}
