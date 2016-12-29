@@ -42,6 +42,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		})
 		if t.Msisdn == "" ||
 			t.CampaignId == 0 ||
+			t.ServiceId == 0 ||
 			t.ContentId == 0 {
 			svc.m.ContentSent.Dropped.Inc()
 			svc.m.ContentSent.Empty.Inc()
@@ -69,11 +70,10 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			"tid, "+
 			"id_campaign, "+
 			"id_service, "+
-			"id_subscription, "+
 			"id_content, "+
 			"country_code, "+
 			"operator_code "+
-			") values ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			") values ($1, $2, $3, $4, $5, $6, $7, $8)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -82,7 +82,6 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Tid,
 			t.CampaignId,
 			t.ServiceId,
-			t.SubscriptionId,
 			t.ContentId,
 			t.CountryCode,
 			t.OperatorCode,

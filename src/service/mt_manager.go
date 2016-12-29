@@ -162,8 +162,9 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
 		fields := log.Fields{
-			"tid":  r.Tid,
-			"took": time.Since(begin),
+			"tid":    r.Tid,
+			"result": r.SubscriptionStatus,
+			"took":   time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
