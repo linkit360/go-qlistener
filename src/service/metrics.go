@@ -133,6 +133,7 @@ type mtManagerMetrics struct {
 	TouchRetryDuration              prometheus.Summary
 	RemoveRetryDuration             prometheus.Summary
 	WriteSubscriptionStatusDuration prometheus.Summary
+	UnsubscribeDuration             prometheus.Summary
 	WriteTransactionDuration        prometheus.Summary
 }
 
@@ -153,6 +154,7 @@ func initMtManagerMetrics() *mtManagerMetrics {
 		TouchRetryDuration:              newDuration("touch_retry_db"),
 		RemoveRetryDuration:             newDuration("remove_retry_db"),
 		WriteSubscriptionStatusDuration: newDuration("write_subscription_status_db"),
+		UnsubscribeDuration:             newDuration("unsubscribe"),
 		WriteTransactionDuration:        newDuration("write_transaction_db"),
 	}
 	go func() {

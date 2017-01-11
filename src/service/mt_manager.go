@@ -37,9 +37,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 
-		if t.Msisdn == "" ||
-			t.CampaignId == 0 ||
-			t.SubscriptionId == 0 {
+		if e.EventName != "Unsubscribe" && (t.Msisdn == "" || t.CampaignId == 0 || t.SubscriptionId == 0) {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
@@ -50,10 +48,13 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("failed")
 			goto ack
 		}
+
 		logCtx = logCtx.WithFields(log.Fields{
 			"tid": t.Tid,
 		})
 		switch e.EventName {
+		case "Unsubscribe":
+			err = unsubscribe(t)
 		case "StartRetry":
 			err = startRetry(t)
 		case "AddBlacklistedNumber":
@@ -155,6 +156,45 @@ func writeTransaction(r rec.Record) (err error) {
 	svc.m.MTManager.WriteTransactionDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	return nil
+}
+
+func unsubscribe(r rec.Record) (err error) {
+	begin := time.Now()
+	r.SubscriptionStatus = "canceled"
+	defer func() {
+		fields := log.Fields{
+			"tid":    r.Tid,
+			"result": r.SubscriptionStatus,
+			"took":   time.Since(begin),
+		}
+		if err != nil {
+			fields["error"] = err.Error()
+			fields["rec"] = fmt.Sprintf("%#v", r)
+		}
+		log.WithFields(fields).Debug("unsubscribe")
+	}()
+	query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
+		"result = $1, "+
+		"attempts_count = attempts_count + 1, "+
+		"last_pay_attempt_at = $2 "+
+		"WHERE id = (SELECT id FROM %ssubscriptions WHERE msisdn = $3 AND id_service = $4 ORDER BY id LIMIT 1)",
+		svc.dbConf.TablePrefix,
+		svc.dbConf.TablePrefix,
+	)
+
+	lastPayAttemptAt := r.SentAt
+	_, err = svc.db.Exec(query,
+		r.SubscriptionStatus,
+		lastPayAttemptAt,
+		r.Msisdn,
+		r.ServiceId,
+	)
+	if err != nil {
+		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
+		return
+	}
+	svc.m.MTManager.UnsubscribeDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 

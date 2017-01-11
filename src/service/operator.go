@@ -107,7 +107,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.Msisdn = t.Msisdn[:31]
 		}
 		if t.Type == "" {
-			logCtx.Error("no transaction type")
+			logCtx.Warn("no transaction type")
 			t.Type = "charge"
 		}
 

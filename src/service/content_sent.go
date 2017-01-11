@@ -3,17 +3,17 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	"github.com/vostrok/contentd/service"
-	"time"
+	inmem_service "github.com/vostrok/inmem/service"
 )
 
 type EventNotifyContentSent struct {
-	EventName string                        `json:"event_name,omitempty"`
-	EventData service.ContentSentProperties `json:"event_data,omitempty"`
+	EventName string                              `json:"event_name,omitempty"`
+	EventData inmem_service.ContentSentProperties `json:"event_data,omitempty"`
 }
 
 func processContentSent(deliveries <-chan amqp.Delivery) {
@@ -22,7 +22,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			"q": svc.sConfig.Queue.ContentSent.Name,
 		})
 		var begin time.Time
-		var t service.ContentSentProperties
+		var t inmem_service.ContentSentProperties
 		var query string
 
 		var e EventNotifyContentSent
