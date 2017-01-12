@@ -40,10 +40,8 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		logCtx = logCtx.WithFields(log.Fields{
 			"tid": t.Tid,
 		})
-		if t.Msisdn == "" ||
-			t.CampaignId == 0 ||
-			t.ServiceId == 0 ||
-			t.ContentId == 0 {
+		if t.CampaignId == 0 ||
+			t.ServiceId == 0 {
 			svc.m.ContentSent.Dropped.Inc()
 			svc.m.ContentSent.Empty.Inc()
 
