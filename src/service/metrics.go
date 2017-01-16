@@ -122,19 +122,20 @@ func newGaugeMTManager(name, help string) m.Gauge {
 }
 
 type mtManagerMetrics struct {
-	Dropped                         m.Gauge
-	Empty                           m.Gauge
-	AddToDbSuccess                  m.Gauge
-	AddToDBErrors                   m.Gauge
-	AddToDBDuration                 prometheus.Summary
-	AddBlacklistedNumberDuration    prometheus.Summary
-	AddPostPaidNumberDuration       prometheus.Summary
-	StartRetryDuration              prometheus.Summary
-	TouchRetryDuration              prometheus.Summary
-	RemoveRetryDuration             prometheus.Summary
-	WriteSubscriptionStatusDuration prometheus.Summary
-	UnsubscribeDuration             prometheus.Summary
-	WriteTransactionDuration        prometheus.Summary
+	Dropped                           m.Gauge
+	Empty                             m.Gauge
+	AddToDbSuccess                    m.Gauge
+	AddToDBErrors                     m.Gauge
+	AddToDBDuration                   prometheus.Summary
+	AddBlacklistedNumberDuration      prometheus.Summary
+	AddPostPaidNumberDuration         prometheus.Summary
+	StartRetryDuration                prometheus.Summary
+	TouchRetryDuration                prometheus.Summary
+	RemoveRetryDuration               prometheus.Summary
+	WriteSubscriptionStatusDuration   prometheus.Summary
+	WriteSubscriptionPeriodicDuration prometheus.Summary
+	UnsubscribeDuration               prometheus.Summary
+	WriteTransactionDuration          prometheus.Summary
 }
 
 func newDuration(name string) prometheus.Summary {
@@ -143,19 +144,20 @@ func newDuration(name string) prometheus.Summary {
 
 func initMtManagerMetrics() *mtManagerMetrics {
 	m := &mtManagerMetrics{
-		Dropped:                         newGaugeMTManager("dropped", "dropped msgs"),
-		Empty:                           newGaugeMTManager("empty", "empty msgs"),
-		AddToDbSuccess:                  newGaugeMTManager("add_to_db_success", "add to db success"),
-		AddToDBErrors:                   newGaugeMTManager("add_to_db_errors", "add to db errors"),
-		AddToDBDuration:                 newAddToDBDuration("mt_manager_db"),
-		AddBlacklistedNumberDuration:    newDuration("add_blacklisted_db"),
-		AddPostPaidNumberDuration:       newDuration("add_postpaid_db"),
-		StartRetryDuration:              newDuration("start_retry_db"),
-		TouchRetryDuration:              newDuration("touch_retry_db"),
-		RemoveRetryDuration:             newDuration("remove_retry_db"),
-		WriteSubscriptionStatusDuration: newDuration("write_subscription_status_db"),
-		UnsubscribeDuration:             newDuration("unsubscribe"),
-		WriteTransactionDuration:        newDuration("write_transaction_db"),
+		Dropped:                           newGaugeMTManager("dropped", "dropped msgs"),
+		Empty:                             newGaugeMTManager("empty", "empty msgs"),
+		AddToDbSuccess:                    newGaugeMTManager("add_to_db_success", "add to db success"),
+		AddToDBErrors:                     newGaugeMTManager("add_to_db_errors", "add to db errors"),
+		AddToDBDuration:                   newAddToDBDuration("mt_manager_db"),
+		AddBlacklistedNumberDuration:      newDuration("add_blacklisted_db"),
+		AddPostPaidNumberDuration:         newDuration("add_postpaid_db"),
+		StartRetryDuration:                newDuration("start_retry_db"),
+		TouchRetryDuration:                newDuration("touch_retry_db"),
+		RemoveRetryDuration:               newDuration("remove_retry_db"),
+		WriteSubscriptionStatusDuration:   newDuration("write_subscription_status_db"),
+		WriteSubscriptionPeriodicDuration: newDuration("write_subscription_periodic_db"),
+		UnsubscribeDuration:               newDuration("unsubscribe"),
+		WriteTransactionDuration:          newDuration("write_transaction_db"),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {

@@ -67,6 +67,8 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			err = removeRetry(t)
 		case "WriteSubscriptionStatus":
 			err = writeSubscriptionStatus(t)
+		case "WriteSubscriptionPeriodic":
+			err = writeSubscriptionPeriodic(t)
 		case "WriteTransaction":
 			err = writeTransaction(t)
 		default:
@@ -198,6 +200,36 @@ func unsubscribe(r rec.Record) (err error) {
 	return nil
 }
 
+func writeSubscriptionPeriodic(r rec.Record) (err error) {
+	begin := time.Now()
+	defer func() {
+		fields := log.Fields{
+			"tid":      r.Tid,
+			"periodic": r.Periodic,
+			"id":       r.SubscriptionId,
+			"took":     time.Since(begin),
+		}
+		if err != nil {
+			fields["error"] = err.Error()
+			fields["rec"] = fmt.Sprintf("%#v", r)
+		}
+		log.WithFields(fields).Debug("write subscription periodic")
+	}()
+	query := fmt.Sprintf("UPDATE %ssubscriptions SET periodic = $1 WHERE id = $2",
+		svc.dbConf.TablePrefix,
+	)
+	_, err = svc.db.Exec(query,
+		r.Periodic,
+		r.SubscriptionId,
+	)
+	if err != nil {
+		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
+		return
+	}
+	svc.m.MTManager.WriteSubscriptionPeriodicDuration.Observe(time.Since(begin).Seconds())
+	return nil
+}
+
 func writeSubscriptionStatus(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
@@ -234,8 +266,6 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	}
 
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
-	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
