@@ -58,10 +58,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"tid": t.Tid,
 		})
 		if t.RequestBody == "" {
-			logCtx.Error("no request body")
+			logCtx.Warn("no request body")
 		}
 		if t.ResponseBody == "" {
-			logCtx.Error("no response body")
+			logCtx.Warn("no response body")
 		}
 		if t.RequestBody == "" && t.ResponseBody == "" {
 			svc.m.Operator.Dropped.Inc()
@@ -72,31 +72,31 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 		if t.Tid == "" {
-			logCtx.Error("no tid")
+			logCtx.Warn("no tid")
 		}
 		if t.OperatorToken == "" {
-			logCtx.Error("no operator token")
+			logCtx.Warn("no operator token")
 		}
 		if t.OperatorCode == 0 {
-			logCtx.Error("no operator code")
+			logCtx.Warn("no operator code")
 		}
 		if t.CountryCode == 0 {
-			logCtx.Error("no country code")
+			logCtx.Warn("no country code")
 		}
 		if t.Price == 0 {
-			logCtx.Error("no price")
+			logCtx.Warn("no price")
 		}
 		if t.ServiceId == 0 {
-			logCtx.Error("no service id")
+			logCtx.Warn("no service id")
 		}
 		if t.SubscriptionId == 0 {
-			logCtx.Error("no subscription id")
+			logCtx.Warn("no subscription id")
 		}
 		if t.CampaignId == 0 {
-			logCtx.Error("no campaign id")
+			logCtx.Warn("no campaign id")
 		}
 		if t.ResponseCode == 0 {
-			logCtx.Error("no response code")
+			logCtx.Warn("no response code")
 		}
 
 		// todo: add check for every field
@@ -127,11 +127,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_body, "+
 			"response_decision, "+
 			"response_code,  "+
-			"sent_at, "+
-			"type "+
+			"sent_at "+
+			//"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
-			"$11, $12, $13, $14, $15, $16)",
+			"$11, $12, $13, $14, $15)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -150,7 +150,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 			t.SentAt,
-			t.Type,
+			//t.Type,
 		); err != nil {
 			svc.m.DBErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()
