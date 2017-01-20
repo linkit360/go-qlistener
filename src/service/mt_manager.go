@@ -284,11 +284,15 @@ func removeRetry(r rec.Record) (err error) {
 			log.WithFields(fields).Debug("remove retry")
 		}
 	}()
-	query := fmt.Sprintf(`INSERT INTO
+	var query string
+
+	if r.SubscriptionStatus != "paid" {
+		query = fmt.Sprintf(`INSERT INTO
 	%sretries_expired(
 		  status,
-		  tid ,
+		  tid,
 		  created_at ,
+		  price,
 		  last_pay_attempt_at ,
 		  attempts_count ,
 		  keep_days ,
@@ -304,6 +308,7 @@ func removeRetry(r rec.Record) (err error) {
 		  status,
 		  tid ,
 		  created_at ,
+		  price,
 		  last_pay_attempt_at ,
 		  attempts_count ,
 		  keep_days ,
@@ -315,13 +320,15 @@ func removeRetry(r rec.Record) (err error) {
 		  id_subscription ,
 		  id_campaign
   	FROM %sretries WHERE id = $1`,
-		svc.dbConf.TablePrefix,
-		svc.dbConf.TablePrefix,
-	)
-	if _, err = svc.db.Exec(query, r.RetryId); err != nil {
-		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
-		return
+			svc.dbConf.TablePrefix,
+			svc.dbConf.TablePrefix,
+		)
+		if _, err = svc.db.Exec(query, r.RetryId); err != nil {
+			err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
+			return
+		}
 	}
+
 	query = fmt.Sprintf("DELETE FROM %sretries WHERE id = $1", svc.dbConf.TablePrefix)
 
 	if _, err = svc.db.Exec(query, r.RetryId); err != nil {
