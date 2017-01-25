@@ -66,9 +66,13 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				"id_campaign, "+
 				"id_service, "+
 				"id_content, "+
+				"id_subscription, "+
 				"country_code, "+
-				"operator_code "+
-				") values ($1, $2, $3, $4, $5, $6, $7, $8)",
+				"operator_code, "+
+				"content_path, "+
+				"content_name, "+
+				"unique_url "+
+				") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
 				svc.dbConf.TablePrefix)
 
 			if _, err := svc.db.Exec(query,
@@ -78,8 +82,12 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.CampaignId,
 				t.ServiceId,
 				t.ContentId,
+				t.SubscriptionId,
 				t.CountryCode,
 				t.OperatorCode,
+				t.ContentPath,
+				t.ContentName,
+				t.UniqueUrl,
 			); err != nil {
 				svc.m.DBErrors.Inc()
 				svc.m.UniqueUrls.AddToDBErrors.Inc()

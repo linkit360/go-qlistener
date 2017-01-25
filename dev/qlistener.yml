@@ -35,6 +35,10 @@ service:
       name: pixel_sent
       prefetch_count: 10
       threads_count: 10
+    unique_urls:
+      name: contentd_unique_url
+      prefetch_count: 10
+      threads_count: 10
 
 
 consumer:
