@@ -11,11 +11,6 @@ import (
 	inmem_service "github.com/vostrok/inmem/service"
 )
 
-type EventNotifyContentSent struct {
-	EventName string                              `json:"event_name,omitempty"`
-	EventData inmem_service.ContentSentProperties `json:"event_data,omitempty"`
-}
-
 func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 	for msg := range deliveries {
 		logCtx := log.WithFields(log.Fields{
@@ -97,7 +92,6 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				msg.Nack(false, true)
 				continue
 			}
-
 			svc.m.UniqueUrls.AddToDbSuccess.Inc()
 			svc.m.UniqueUrls.AddToDBDuration.Observe(time.Since(begin).Seconds())
 			svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
@@ -105,12 +99,20 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 
 		if e.EventName == "delete" {
 			begin = time.Now()
+			if t.UniqueUrl == "" {
+				logCtx.WithFields(log.Fields{
+					"error": "Empty message",
+					"msg":   "dropped",
+					"body":  string(msg.Body),
+				}).Error("failed")
+				goto ack
+			}
 			query = fmt.Sprintf("DELETE FROM %scontent_unique_urls WHERE unique_url = $1",
 				svc.dbConf.TablePrefix)
 
 			if _, err := svc.db.Exec(query, t.UniqueUrl); err != nil {
 				svc.m.DBErrors.Inc()
-				svc.m.UniqueUrls.AddToDBErrors.Inc()
+				svc.m.UniqueUrls.DeleteUniqUrlErrors.Inc()
 
 				logCtx.WithFields(log.Fields{
 					"query": query,
@@ -121,11 +123,12 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				continue
 			}
 
-			svc.m.UniqueUrls.AddToDbSuccess.Inc()
+			svc.m.UniqueUrls.DeleteUniqUrlSuccess.Inc()
 			svc.m.UniqueUrls.DeleteFromDBDuration.Observe(time.Since(begin).Seconds())
 		}
 		logCtx.WithFields(log.Fields{
-			"took": time.Since(begin).String(),
+			"event": e.EventName,
+			"took":  time.Since(begin).String(),
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {

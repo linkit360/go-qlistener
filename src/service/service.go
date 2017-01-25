@@ -53,6 +53,7 @@ func InitService(
 		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign.Name, sConf.Queue.AccessCampaign.PrefetchCount),
 		UserActions: amqp.NewConsumer(consumerConf, sConf.Queue.UserActions.Name, sConf.Queue.UserActions.PrefetchCount),
 		ContentSent: amqp.NewConsumer(consumerConf, sConf.Queue.ContentSent.Name, sConf.Queue.ContentSent.PrefetchCount),
+		UniqueUrl:   amqp.NewConsumer(consumerConf, sConf.Queue.UniqueUrls.Name, sConf.Queue.UniqueUrls.PrefetchCount),
 		Operator:    amqp.NewConsumer(consumerConf, sConf.Queue.TransactionLog.Name, sConf.Queue.TransactionLog.PrefetchCount),
 		MTManager:   amqp.NewConsumer(consumerConf, sConf.Queue.MTManager.Name, sConf.Queue.MTManager.PrefetchCount),
 		Pixels:      amqp.NewConsumer(consumerConf, sConf.Queue.PixelSent.Name, sConf.Queue.PixelSent.PrefetchCount),
@@ -64,6 +65,9 @@ func InitService(
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 	if err := svc.consumer.ContentSent.Connect(); err != nil {
+		log.Fatal("rbmq connect: ", err.Error())
+	}
+	if err := svc.consumer.UniqueUrl.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 	if err := svc.consumer.Operator.Connect(); err != nil {
@@ -94,6 +98,15 @@ func InitService(
 		sConf.Queue.ContentSent.ThreadsCount,
 		sConf.Queue.ContentSent.Name,
 		sConf.Queue.ContentSent.Name,
+	)
+	// unique url queue
+	amqp.InitQueue(
+		svc.consumer.UniqueUrl,
+		svc.uniqueUrlsChan,
+		processUniqueUrls,
+		sConf.Queue.UniqueUrls.ThreadsCount,
+		sConf.Queue.UniqueUrls.Name,
+		sConf.Queue.UniqueUrls.Name,
 	)
 
 	// user actions queue
@@ -140,6 +153,7 @@ type Service struct {
 	db                         *sql.DB
 	consumer                   Consumers
 	contentSentChan            <-chan amqp_driver.Delivery
+	uniqueUrlsChan             <-chan amqp_driver.Delivery
 	accessCampaignChan         <-chan amqp_driver.Delivery
 	userActionsChan            <-chan amqp_driver.Delivery
 	operatorTransactionLogChan <-chan amqp_driver.Delivery
@@ -156,6 +170,7 @@ type Consumers struct {
 	Access      *amqp.Consumer
 	UserActions *amqp.Consumer
 	ContentSent *amqp.Consumer
+	UniqueUrl   *amqp.Consumer
 	Operator    *amqp.Consumer
 	MTManager   *amqp.Consumer
 	Pixels      *amqp.Consumer
