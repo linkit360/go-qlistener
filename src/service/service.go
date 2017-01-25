@@ -163,6 +163,7 @@ type Consumers struct {
 type QueuesConfig struct {
 	AccessCampaign config.ConsumeQueueConfig `yaml:"access_campaign"`
 	ContentSent    config.ConsumeQueueConfig `yaml:"content_sent"`
+	UniqueUrls     config.ConsumeQueueConfig `yaml:"unique_urls"`
 	UserActions    config.ConsumeQueueConfig `yaml:"user_actions"`
 	TransactionLog config.ConsumeQueueConfig `yaml:"transaction_log"`
 	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`

@@ -67,7 +67,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
-			}).Error("no urlpath")
+			}).Warn("no urlpath")
 			goto ack
 		}
 		if t.CampaignId == 0 {

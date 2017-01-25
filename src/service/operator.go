@@ -127,11 +127,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_body, "+
 			"response_decision, "+
 			"response_code,  "+
-			"sent_at "+
-			//"type "+
+			"sent_at, "+
+			"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
-			"$11, $12, $13, $14, $15)",
+			"$11, $12, $13, $14, $15, $16)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -150,7 +150,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 			t.SentAt,
-			//t.Type,
+			t.Type,
 		); err != nil {
 			svc.m.DBErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()

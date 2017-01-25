@@ -17,6 +17,7 @@ func newMetrics(name string) Metrics {
 		DBInsertDuration: m.NewSummary(appName+"_insert_db_duration_seconds", "db insert duration seconds"),
 		AccessCampaign:   initAccessCampaignMetrics(),
 		ContentSent:      initContentSentMetrics(),
+		UniqueUrls:       initUniqueUrlsMetrics(),
 		MTManager:        initMtManagerMetrics(),
 		Operator:         initOperatorsMetrics(),
 		Pixels:           initPixelMetrics(),
@@ -36,6 +37,7 @@ type Metrics struct {
 	DBInsertDuration prometheus.Summary
 	AccessCampaign   *accessCampaignMetrics
 	ContentSent      *contentSentMetrics
+	UniqueUrls       *uniqueUrlsMetrics
 	UserActions      *userActionsMetrics
 	Operator         *operatorMetrics
 	MTManager        *mtManagerMetrics
@@ -105,6 +107,44 @@ func initContentSentMetrics() *contentSentMetrics {
 		AddToDbSuccess:  newGaugeContentSent("add_to_db_success", "add to db errors"),
 		AddToDBDuration: newAddToDBDuration("content_sent"),
 		AddToDBErrors:   newGaugeContentSent("add_to_db_errors", "add to db errors"),
+	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
+		}
+	}()
+	return m
+}
+
+// Content Sent metrics
+func newGaugeUniqueUrls(name, help string) m.Gauge {
+	return m.NewGauge(appName, "unique_urls", name, "unique urls "+help)
+}
+
+type uniqueUrlsMetrics struct {
+	Dropped              m.Gauge
+	Empty                m.Gauge
+	AddToDbSuccess       m.Gauge
+	AddToDBErrors        m.Gauge
+	AddToDBDuration      prometheus.Summary
+	DeleteUniqUrlSuccess m.Gauge
+	DeleteUniqUrlErrors  m.Gauge
+	DeleteFromDBDuration prometheus.Summary
+}
+
+func initUniqueUrlsMetrics() *uniqueUrlsMetrics {
+	m := &uniqueUrlsMetrics{
+		Dropped:              newGaugeUniqueUrls("dropped", "dropped msgs"),
+		Empty:                newGaugeUniqueUrls("empty", "empty msgs"),
+		AddToDbSuccess:       newGaugeUniqueUrls("add_to_db_success", "add to db success"),
+		AddToDBErrors:        newGaugeUniqueUrls("add_to_db_errors", "add to db errors"),
+		AddToDBDuration:      newAddToDBDuration("unique_urls"),
+		DeleteUniqUrlSuccess: newGaugeUniqueUrls("delete_from_db_success", "delete from db success"),
+		DeleteUniqUrlErrors:  newGaugeUniqueUrls("delete_from_db_errors", "delete from db errors"),
+		DeleteFromDBDuration: m.NewSummary(appName+"_unique_urls_delete_from_db_duration_seconds", "delete from db unique url duration seconds"),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
