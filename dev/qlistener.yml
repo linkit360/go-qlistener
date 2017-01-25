@@ -36,7 +36,7 @@ service:
       prefetch_count: 10
       threads_count: 10
     unique_urls:
-      name: contentd_unique_url
+      name: unique_urls
       prefetch_count: 10
       threads_count: 10
 
