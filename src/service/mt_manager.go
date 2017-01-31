@@ -246,17 +246,14 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	}()
 	query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
 		"result = $1, "+
-		"periodic = $2, "+
-		"attempts_count = attempts_count + 1, "+
-		"last_pay_attempt_at = $3 "+
-		"where id = $4",
+		"last_pay_attempt_at = $2 "+
+		"where id = $3",
 		svc.dbConf.TablePrefix,
 	)
 
 	lastPayAttemptAt := r.SentAt
 	_, err = svc.db.Exec(query,
 		r.SubscriptionStatus,
-		r.Periodic,
 		lastPayAttemptAt,
 		r.SubscriptionId,
 	)

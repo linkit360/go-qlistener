@@ -13,6 +13,7 @@ type OperatorTransactionLog struct {
 	Tid              string    `json:"tid,omitempty"`
 	Msisdn           string    `json:"msisdn,omitempty"`
 	OperatorToken    string    `json:"token,omitempty"`
+	Notice           string    `json:"notice,omitempty"`
 	OperatorCode     int64     `json:"operator_code,omitempty"`
 	CountryCode      int64     `json:"country_code,omitempty"`
 	Error            string    `json:"error,omitempty"`
