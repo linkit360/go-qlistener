@@ -37,7 +37,8 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 
-		if e.EventName != "Unsubscribe" && (t.Msisdn == "" || t.CampaignId == 0 || t.SubscriptionId == 0) {
+		if (e.EventName != "Unsubscribe" && e.EventName != " UnsubscribeAll") &&
+			(t.Msisdn == "" || t.CampaignId == 0 || t.SubscriptionId == 0) {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
@@ -55,6 +56,8 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		switch e.EventName {
 		case "Unsubscribe":
 			err = unsubscribe(t)
+		case "UnsubscribeAll":
+			err = unsubscribeAll(t)
 		case "StartRetry":
 			err = startRetry(t)
 		case "AddBlacklistedNumber":
@@ -83,7 +86,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		}
 
 		if err != nil {
-			svc.m.DBErrors.Inc()
+			svc.m.Common.DBErrors.Inc()
 			svc.m.MTManager.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
@@ -157,7 +160,7 @@ func writeTransaction(r rec.Record) (err error) {
 
 	svc.m.MTManager.WriteTransactionDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -199,7 +202,42 @@ func unsubscribe(r rec.Record) (err error) {
 	svc.m.MTManager.UnsubscribeDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
+func unsubscribeAll(r rec.Record) (err error) {
+	begin := time.Now()
+	r.SubscriptionStatus = "canceled"
+	defer func() {
+		fields := log.Fields{
+			"tid":    r.Tid,
+			"result": r.SubscriptionStatus,
+			"took":   time.Since(begin),
+		}
+		if err != nil {
+			fields["error"] = err.Error()
+			fields["rec"] = fmt.Sprintf("%#v", r)
+		}
+		log.WithFields(fields).Debug("unsubscribe")
+	}()
+	query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
+		"result = $1, "+
+		"attempts_count = attempts_count + 1, "+
+		"last_pay_attempt_at = $2 "+
+		"WHERE msisdn = $3",
+		svc.dbConf.TablePrefix,
+	)
 
+	lastPayAttemptAt := r.SentAt
+	_, err = svc.db.Exec(query,
+		r.SubscriptionStatus,
+		lastPayAttemptAt,
+		r.Msisdn,
+	)
+	if err != nil {
+		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
+		return
+	}
+	svc.m.MTManager.UnsubscribeAllDuration.Observe(time.Since(begin).Seconds())
+	return nil
+}
 func writeSubscriptionPeriodic(r rec.Record) (err error) {
 	begin := time.Now()
 	defer func() {
@@ -334,7 +372,7 @@ func removeRetry(r rec.Record) (err error) {
 	}
 	svc.m.MTManager.RemoveRetryDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -367,7 +405,7 @@ func touchRetry(r rec.Record) (err error) {
 
 	svc.m.MTManager.TouchRetryDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -427,7 +465,7 @@ func startRetry(r rec.Record) (err error) {
 
 	svc.m.MTManager.StartRetryDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -454,7 +492,7 @@ func addBlacklistedNumber(r rec.Record) (err error) {
 
 	svc.m.MTManager.AddBlacklistedNumberDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -483,6 +521,6 @@ func addPostPaidNumber(r rec.Record) (err error) {
 
 	svc.m.MTManager.AddPostPaidNumberDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
-	svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }

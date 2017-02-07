@@ -13,35 +13,46 @@ var appName string
 func newMetrics(name string) Metrics {
 	appName = name
 	m := Metrics{
-		DBErrors:         m.NewGauge("", "", "db_errors", "db errors"),
-		DBInsertDuration: m.NewSummary(appName+"_insert_db_duration_seconds", "db insert duration seconds"),
-		AccessCampaign:   initAccessCampaignMetrics(),
-		ContentSent:      initContentSentMetrics(),
-		UniqueUrls:       initUniqueUrlsMetrics(),
-		MTManager:        initMtManagerMetrics(),
-		Operator:         initOperatorsMetrics(),
-		Pixels:           initPixelMetrics(),
-		UserActions:      initUserActionsMetrics(),
+		Common:         initCommonMetrics(),
+		AccessCampaign: initAccessCampaignMetrics(),
+		ContentSent:    initContentSentMetrics(),
+		UniqueUrls:     initUniqueUrlsMetrics(),
+		MTManager:      initMtManagerMetrics(),
+		Operator:       initOperatorsMetrics(),
+		Pixels:         initPixelMetrics(),
+		UserActions:    initUserActionsMetrics(),
 	}
-	go func() {
-		for range time.Tick(time.Minute) {
-			m.DBErrors.Update()
-		}
-	}()
 	return m
 }
 
 // todo: add_to_db_success add_to_db_errors
 type Metrics struct {
+	Common         *CommonMetrics
+	AccessCampaign *accessCampaignMetrics
+	ContentSent    *contentSentMetrics
+	UniqueUrls     *uniqueUrlsMetrics
+	UserActions    *userActionsMetrics
+	Operator       *operatorMetrics
+	MTManager      *mtManagerMetrics
+	Pixels         *pixelMetrics
+}
+
+type CommonMetrics struct {
 	DBErrors         m.Gauge
 	DBInsertDuration prometheus.Summary
-	AccessCampaign   *accessCampaignMetrics
-	ContentSent      *contentSentMetrics
-	UniqueUrls       *uniqueUrlsMetrics
-	UserActions      *userActionsMetrics
-	Operator         *operatorMetrics
-	MTManager        *mtManagerMetrics
-	Pixels           *pixelMetrics
+}
+
+func initCommonMetrics() *CommonMetrics {
+	cm := &CommonMetrics{
+		DBErrors:         m.NewGauge("", "", "db_errors", "db errors"),
+		DBInsertDuration: m.NewSummary(appName+"_insert_db_duration_seconds", "db insert duration seconds"),
+	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			cm.DBErrors.Update()
+		}
+	}()
+	return cm
 }
 
 // Access Campaign metrics
@@ -175,6 +186,7 @@ type mtManagerMetrics struct {
 	WriteSubscriptionStatusDuration   prometheus.Summary
 	WriteSubscriptionPeriodicDuration prometheus.Summary
 	UnsubscribeDuration               prometheus.Summary
+	UnsubscribeAllDuration            prometheus.Summary
 	WriteTransactionDuration          prometheus.Summary
 }
 
@@ -197,6 +209,7 @@ func initMtManagerMetrics() *mtManagerMetrics {
 		WriteSubscriptionStatusDuration:   newDuration("write_subscription_status_db"),
 		WriteSubscriptionPeriodicDuration: newDuration("write_subscription_periodic_db"),
 		UnsubscribeDuration:               newDuration("unsubscribe"),
+		UnsubscribeAllDuration:            newDuration("unsubscribe_all"),
 		WriteTransactionDuration:          newDuration("write_transaction_db"),
 	}
 	go func() {

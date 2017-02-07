@@ -79,7 +79,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			t.Action,
 			t.Error,
 		); err != nil {
-			svc.m.DBErrors.Inc()
+			svc.m.Common.DBErrors.Inc()
 			svc.m.UserActions.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
@@ -93,7 +93,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 
 		svc.m.UserActions.AddToDbSuccess.Inc()
 		svc.m.UserActions.AddToDBDuration.Observe(time.Since(begin).Seconds())
-		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),
