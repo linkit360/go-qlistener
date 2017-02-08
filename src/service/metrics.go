@@ -21,6 +21,7 @@ func newMetrics(name string) Metrics {
 		Operator:       initOperatorsMetrics(),
 		Pixels:         initPixelMetrics(),
 		UserActions:    initUserActionsMetrics(),
+		Redirects:      initRedirectsMetrics(),
 	}
 	return m
 }
@@ -35,6 +36,7 @@ type Metrics struct {
 	Operator       *operatorMetrics
 	MTManager      *mtManagerMetrics
 	Pixels         *pixelMetrics
+	Redirects      *redirectsMetrics
 }
 
 type CommonMetrics struct {
@@ -322,6 +324,38 @@ func initPixelMetrics() *pixelMetrics {
 			m.AddToDBErrors.Update()
 			m.UpdateSubscriptionSuccess.Update()
 			m.UpdateSubscriptionToDBErrors.Update()
+		}
+	}()
+	return m
+}
+
+// redirects metrics
+func newGaugeRedirects(name, help string) m.Gauge {
+	return m.NewGauge(appName, "redirects", name, "redirects "+help)
+}
+
+type redirectsMetrics struct {
+	Dropped         m.Gauge
+	Empty           m.Gauge
+	AddToDbSuccess  m.Gauge
+	AddToDBDuration prometheus.Summary
+	AddToDBErrors   m.Gauge
+}
+
+func initRedirectsMetrics() *redirectsMetrics {
+	m := &redirectsMetrics{
+		Dropped:         newGaugeRedirects("dropped", "dropped msgs"),
+		Empty:           newGaugeRedirects("empty", "empty msgs"),
+		AddToDbSuccess:  newGaugeRedirects("add_to_db_success", "create records count"),
+		AddToDBDuration: newAddToDBDuration("redirects"),
+		AddToDBErrors:   newGaugeRedirects("add_to_db_errors", "create record: database errors"),
+	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			m.Dropped.Update()
+			m.Empty.Update()
+			m.AddToDbSuccess.Update()
+			m.AddToDBErrors.Update()
 		}
 	}()
 	return m

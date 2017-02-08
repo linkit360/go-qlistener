@@ -39,7 +39,10 @@ service:
       name: unique_urls
       prefetch_count: 10
       threads_count: 10
-
+    redirect:
+      name: traffic_redirects
+      prefetch_count: 10
+      threads_count: 10
 
 consumer:
   conn:

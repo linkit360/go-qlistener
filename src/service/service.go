@@ -183,6 +183,7 @@ type QueuesConfig struct {
 	TransactionLog config.ConsumeQueueConfig `yaml:"transaction_log"`
 	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`
 	PixelSent      config.ConsumeQueueConfig `yaml:"pixel_sent"`
+	Redirects      config.ConsumeQueueConfig `yaml:"redirects"`
 }
 
 type ServiceConfig struct {
