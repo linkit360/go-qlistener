@@ -89,7 +89,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.ContentName,
 				t.UniqueUrl,
 			); err != nil {
-				svc.m.DBErrors.Inc()
+				svc.m.Common.DBErrors.Inc()
 				svc.m.UniqueUrls.AddToDBErrors.Inc()
 
 				logCtx.WithFields(log.Fields{
@@ -102,7 +102,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 			}
 			svc.m.UniqueUrls.AddToDbSuccess.Inc()
 			svc.m.UniqueUrls.AddToDBDuration.Observe(time.Since(begin).Seconds())
-			svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+			svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 		}
 
 		if e.EventName == "delete" {
@@ -119,7 +119,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				svc.dbConf.TablePrefix)
 
 			if _, err := svc.db.Exec(query, t.UniqueUrl); err != nil {
-				svc.m.DBErrors.Inc()
+				svc.m.Common.DBErrors.Inc()
 				svc.m.UniqueUrls.DeleteUniqUrlErrors.Inc()
 
 				logCtx.WithFields(log.Fields{

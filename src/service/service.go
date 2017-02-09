@@ -50,103 +50,42 @@ func InitService(
 	svc.m = newMetrics(appName)
 
 	svc.consumer = Consumers{
-		Access:      amqp.NewConsumer(consumerConf, sConf.Queue.AccessCampaign.Name, sConf.Queue.AccessCampaign.PrefetchCount),
-		UserActions: amqp.NewConsumer(consumerConf, sConf.Queue.UserActions.Name, sConf.Queue.UserActions.PrefetchCount),
-		ContentSent: amqp.NewConsumer(consumerConf, sConf.Queue.ContentSent.Name, sConf.Queue.ContentSent.PrefetchCount),
-		UniqueUrl:   amqp.NewConsumer(consumerConf, sConf.Queue.UniqueUrls.Name, sConf.Queue.UniqueUrls.PrefetchCount),
-		Operator:    amqp.NewConsumer(consumerConf, sConf.Queue.TransactionLog.Name, sConf.Queue.TransactionLog.PrefetchCount),
-		MTManager:   amqp.NewConsumer(consumerConf, sConf.Queue.MTManager.Name, sConf.Queue.MTManager.PrefetchCount),
-		Pixels:      amqp.NewConsumer(consumerConf, sConf.Queue.PixelSent.Name, sConf.Queue.PixelSent.PrefetchCount),
+		Access:      initConsumer(consumerConf, sConf.Queue.AccessCampaign, svc.accessCampaignChan, processAccessCampaign),
+		UserActions: initConsumer(consumerConf, sConf.Queue.UserActions, svc.userActionsChan, processUserActions),
+		ContentSent: initConsumer(consumerConf, sConf.Queue.ContentSent, svc.contentSentChan, processContentSent),
+		UniqueUrl:   initConsumer(consumerConf, sConf.Queue.UniqueUrls, svc.uniqueUrlsChan, processUniqueUrls),
+		Operator:    initConsumer(consumerConf, sConf.Queue.TransactionLog, svc.operatorTransactionLogChan, operatorTransactions),
+		MTManager:   initConsumer(consumerConf, sConf.Queue.MTManager, svc.mtManagerChan, processMTManagerTasks),
+		Pixels:      initConsumer(consumerConf, sConf.Queue.PixelSent, svc.pixelsChan, processPixels),
+		Redirects:   initConsumer(consumerConf, sConf.Queue.Redirects, svc.redirectsChan, processRedirects),
 	}
-	if err := svc.consumer.Access.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
+}
+
+func initConsumer(
+	consumerConf amqp.ConsumerConfig,
+	queueConf config.ConsumeQueueConfig,
+	readChan <-chan amqp_driver.Delivery,
+	fn func(<-chan amqp_driver.Delivery),
+) *amqp.Consumer {
+	if !queueConf.Enabled {
+		log.Infof("rbmq consumer disabled: %s ", queueConf.Name)
+		return nil
 	}
-	if err := svc.consumer.UserActions.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-	if err := svc.consumer.ContentSent.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-	if err := svc.consumer.UniqueUrl.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-	if err := svc.consumer.Operator.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-	if err := svc.consumer.MTManager.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-	if err := svc.consumer.Pixels.Connect(); err != nil {
+
+	consumer := amqp.NewConsumer(consumerConf, queueConf.Name, queueConf.PrefetchCount)
+	if err := consumer.Connect(); err != nil {
 		log.Fatal("rbmq connect: ", err.Error())
 	}
 
-	// access campaign queue
 	amqp.InitQueue(
-		svc.consumer.Access,
-		svc.accessCampaignChan,
-		processAccessCampaign,
-		sConf.Queue.AccessCampaign.ThreadsCount,
-		sConf.Queue.AccessCampaign.Name,
-		sConf.Queue.AccessCampaign.Name,
+		consumer,
+		readChan,
+		fn,
+		queueConf.ThreadsCount,
+		queueConf.Name,
+		queueConf.Name,
 	)
-
-	// content sent queue
-	amqp.InitQueue(
-		svc.consumer.ContentSent,
-		svc.contentSentChan,
-		processContentSent,
-		sConf.Queue.ContentSent.ThreadsCount,
-		sConf.Queue.ContentSent.Name,
-		sConf.Queue.ContentSent.Name,
-	)
-	// unique url queue
-	amqp.InitQueue(
-		svc.consumer.UniqueUrl,
-		svc.uniqueUrlsChan,
-		processUniqueUrls,
-		sConf.Queue.UniqueUrls.ThreadsCount,
-		sConf.Queue.UniqueUrls.Name,
-		sConf.Queue.UniqueUrls.Name,
-	)
-
-	// user actions queue
-	amqp.InitQueue(
-		svc.consumer.UserActions,
-		svc.userActionsChan,
-		processUserActions,
-		sConf.Queue.UserActions.ThreadsCount,
-		sConf.Queue.UserActions.Name,
-		sConf.Queue.UserActions.Name,
-	)
-
-	// operator transactions queue
-	amqp.InitQueue(
-		svc.consumer.Operator,
-		svc.operatorTransactionLogChan,
-		operatorTransactions,
-		sConf.Queue.TransactionLog.ThreadsCount,
-		sConf.Queue.TransactionLog.Name,
-		sConf.Queue.TransactionLog.Name,
-	)
-	// combined mt manager queue
-	amqp.InitQueue(
-		svc.consumer.MTManager,
-		svc.mtManagerChan,
-		processMTManagerTasks,
-		sConf.Queue.MTManager.ThreadsCount,
-		sConf.Queue.MTManager.Name,
-		sConf.Queue.MTManager.Name,
-	)
-
-	// combined mt manager queue
-	amqp.InitQueue(
-		svc.consumer.Pixels,
-		svc.pixelsChan,
-		processPixels,
-		sConf.Queue.PixelSent.ThreadsCount,
-		sConf.Queue.PixelSent.Name,
-		sConf.Queue.PixelSent.Name,
-	)
+	return consumer
 }
 
 type Service struct {
@@ -159,6 +98,7 @@ type Service struct {
 	operatorTransactionLogChan <-chan amqp_driver.Delivery
 	mtManagerChan              <-chan amqp_driver.Delivery
 	pixelsChan                 <-chan amqp_driver.Delivery
+	redirectsChan              <-chan amqp_driver.Delivery
 	ipDb                       *geoip2.Reader
 	uaparser                   *uaparser.Parser
 	sConfig                    ServiceConfig
@@ -174,6 +114,7 @@ type Consumers struct {
 	Operator    *amqp.Consumer
 	MTManager   *amqp.Consumer
 	Pixels      *amqp.Consumer
+	Redirects   *amqp.Consumer
 }
 type QueuesConfig struct {
 	AccessCampaign config.ConsumeQueueConfig `yaml:"access_campaign"`
@@ -183,7 +124,7 @@ type QueuesConfig struct {
 	TransactionLog config.ConsumeQueueConfig `yaml:"transaction_log"`
 	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`
 	PixelSent      config.ConsumeQueueConfig `yaml:"pixel_sent"`
-	Redirects      config.ConsumeQueueConfig `yaml:"redirects"`
+	Redirects      config.ConsumeQueueConfig `yaml:"redirect"`
 }
 
 type ServiceConfig struct {

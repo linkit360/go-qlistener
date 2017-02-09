@@ -128,11 +128,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_body, "+
 			"response_decision, "+
 			"response_code,  "+
-			"sent_at, "+
-			"type "+
+			"sent_at "+
+			//"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
-			"$11, $12, $13, $14, $15, $16)",
+			"$11, $12, $13, $14, $15)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -151,9 +151,9 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 			t.SentAt,
-			t.Type,
+			//t.Type,
 		); err != nil {
-			svc.m.DBErrors.Inc()
+			svc.m.Common.DBErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
@@ -174,7 +174,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 
 		svc.m.Operator.AddToDbSuccess.Inc()
 		svc.m.Operator.AddToDBDuration.Observe(time.Since(begin).Seconds())
-		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),

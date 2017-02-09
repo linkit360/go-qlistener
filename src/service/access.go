@@ -222,7 +222,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			ipInfo.IsSatelliteProvider,
 			ipInfo.AccuracyRadius,
 		); err != nil {
-			svc.m.DBErrors.Inc()
+			svc.m.Common.DBErrors.Inc()
 			svc.m.AccessCampaign.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
@@ -242,7 +242,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 		svc.m.AccessCampaign.AddToDbSuccess.Inc()
 		svc.m.AccessCampaign.AddToDbDuration.Observe(time.Since(begin).Seconds())
-		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),

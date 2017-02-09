@@ -71,7 +71,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				t.Publisher,
 				t.ResponseCode,
 			); err != nil {
-				svc.m.DBErrors.Inc()
+				svc.m.Common.DBErrors.Inc()
 				svc.m.Pixels.AddToDBErrors.Inc()
 
 				logCtx.WithFields(log.Fields{
@@ -109,7 +109,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				time.Now(),
 				t.SubscriptionId,
 			); err != nil {
-				svc.m.DBErrors.Inc()
+				svc.m.Common.DBErrors.Inc()
 				svc.m.Pixels.UpdateSubscriptionToDBErrors.Inc()
 
 				logCtx.WithFields(log.Fields{
@@ -135,7 +135,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		}
 
 		svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
-		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	ack:
 		if err := msg.Ack(false); err != nil {
 			logCtx.WithFields(log.Fields{

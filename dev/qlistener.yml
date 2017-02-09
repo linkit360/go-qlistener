@@ -12,34 +12,42 @@ service:
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
   queues:
     access_campaign:
+      enabled: true
       name: access_campaign
       prefetch_count: 10
       threads_count: 10
     content_sent:
+      enabled: true
       name: content_sent
       prefetch_count: 10
       threads_count: 10
     user_actions:
+      enabled: true
       name: user_actions
       prefetch_count: 10
       threads_count: 10
     transaction_log:
+      enabled: true
       name: transaction_log
       prefetch_count: 10
       threads_count: 10
     mt_manager:
+      enabled: true
       name: mt_manager
       prefetch_count: 10
       threads_count: 10
     pixel_sent:
+      enabled: true
       name: pixel_sent
       prefetch_count: 10
       threads_count: 10
     unique_urls:
+      enabled: false
       name: unique_urls
       prefetch_count: 10
       threads_count: 10
     redirect:
+      enabled: true
       name: traffic_redirects
       prefetch_count: 10
       threads_count: 10

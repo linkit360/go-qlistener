@@ -86,7 +86,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.CountryCode,
 			t.OperatorCode,
 		); err != nil {
-			svc.m.DBErrors.Inc()
+			svc.m.Common.DBErrors.Inc()
 			svc.m.ContentSent.AddToDBErrors.Inc()
 
 			logCtx.WithFields(log.Fields{
@@ -107,7 +107,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 
 		svc.m.ContentSent.AddToDbSuccess.Inc()
 		svc.m.ContentSent.AddToDBDuration.Observe(time.Since(begin).Seconds())
-		svc.m.DBInsertDuration.Observe(time.Since(begin).Seconds())
+		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),
