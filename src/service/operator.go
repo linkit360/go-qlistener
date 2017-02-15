@@ -13,6 +13,7 @@ type OperatorTransactionLog struct {
 	Tid              string    `json:"tid,omitempty"`
 	Msisdn           string    `json:"msisdn,omitempty"`
 	OperatorToken    string    `json:"token,omitempty"`
+	OperatorTime     time.Time `json:"operator_time,omitempty"`
 	Notice           string    `json:"notice,omitempty"`
 	OperatorCode     int64     `json:"operator_code,omitempty"`
 	CountryCode      int64     `json:"country_code,omitempty"`
@@ -119,6 +120,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"operator_code, "+
 			"country_code, "+
 			"operator_token, "+
+			"operator_time, "+
 			"error, "+
 			"price, "+
 			"id_service, "+
@@ -129,10 +131,10 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_decision, "+
 			"response_code,  "+
 			"sent_at "+
-			//"type "+
+			"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
-			"$11, $12, $13, $14, $15)",
+			"$11, $12, $13, $14, $15, $16, $17)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -141,6 +143,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.OperatorCode,
 			t.CountryCode,
 			t.OperatorToken,
+			t.OperatorTime,
 			t.Error,
 			t.Price,
 			t.ServiceId,
@@ -151,7 +154,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 			t.SentAt,
-			//t.Type,
+			t.Type,
 		); err != nil {
 			svc.m.Common.DBErrors.Inc()
 			svc.m.Operator.AddToDBErrors.Inc()
