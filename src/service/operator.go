@@ -130,7 +130,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_body, "+
 			"response_decision, "+
 			"response_code,  "+
-			"sent_at "+
+			"sent_at, "+
 			"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
