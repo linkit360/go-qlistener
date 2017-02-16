@@ -89,6 +89,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				}
 				continue
 			} else {
+				svc.m.Pixels.AddToDbSuccess.Inc()
+				svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
 				log.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
@@ -96,14 +98,16 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 
 		case "update":
 			query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
-				" publisher = $1,  "+
-				" pixel_sent = $2,  "+
-				" pixel_sent_at = $3  "+
-				" WHERE id = $4 ",
+				" pixel = $1,  "+
+				" publisher = $2,  "+
+				" pixel_sent = $3,  "+
+				" pixel_sent_at = $4  "+
+				" WHERE id = $5 ",
 				svc.dbConf.TablePrefix)
 
 			begin := time.Now()
 			if _, err := svc.db.Exec(query,
+				t.Pixel,
 				t.Publisher,
 				t.Sent,
 				time.Now(),
@@ -120,6 +124,69 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				msg.Nack(false, true)
 				continue
 			} else {
+				svc.m.Pixels.UpdateDBDuration.Observe(time.Since(begin).Seconds())
+				logCtx.WithFields(log.Fields{
+					"took": time.Since(begin),
+				}).Info("success")
+			}
+		case "buffer":
+			query := fmt.Sprintf("INSERT INTO %spixel_buffer ( "+
+				"sent_at, "+
+				"id_campaign, "+
+				"tid, "+
+				"pixel "+
+				") VALUES ( $1, $2, $3, $4)",
+				svc.dbConf.TablePrefix)
+
+			begin := time.Now()
+			if _, err := svc.db.Exec(query,
+				t.SentAt,
+				t.CampaignId,
+				t.Tid,
+				t.Pixel,
+			); err != nil {
+				svc.m.Common.DBErrors.Inc()
+				svc.m.Pixels.BufferAddToDBErrors.Inc()
+
+				logCtx.WithFields(log.Fields{
+					"query": query,
+					"error": err.Error(),
+					"msg":   "dropped",
+				}).Error("failed")
+			nackBuffer:
+				if err := msg.Nack(false, true); err != nil {
+					logCtx.WithFields(log.Fields{
+						"event": e.EventName,
+						"error": err.Error(),
+					}).Error("cannot nack")
+					time.Sleep(time.Second)
+					goto nackBuffer
+				}
+				continue
+			} else {
+				svc.m.Pixels.BufferAddToDBDuration.Observe(time.Since(begin).Seconds())
+				svc.m.Pixels.BufferAddToDbSuccess.Inc()
+				log.WithFields(log.Fields{
+					"event": e.EventName,
+					"took":  time.Since(begin),
+				}).Info("success")
+			}
+		case "remove_buffered":
+			query := fmt.Sprintf("delete from %spixel_buffer WHERE id_campaign = $1 AND pixel = $2 ",
+				svc.dbConf.TablePrefix)
+
+			begin := time.Now()
+			if _, err := svc.db.Exec(query, t.CampaignId, t.Pixel); err != nil {
+				svc.m.Common.DBErrors.Inc()
+
+				logCtx.WithFields(log.Fields{
+					"query": query,
+					"error": err.Error(),
+					"msg":   "dropped",
+				}).Error("failed")
+				msg.Nack(false, true)
+				continue
+			} else {
 				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
@@ -133,8 +200,6 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			}).Error("unknown event")
 			goto ack
 		}
-
-		svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
 		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
 	ack:
 		if err := msg.Ack(false); err != nil {

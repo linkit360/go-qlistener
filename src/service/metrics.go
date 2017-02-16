@@ -303,6 +303,9 @@ type pixelMetrics struct {
 	UpdateSubscriptionSuccess    m.Gauge
 	UpdateDBDuration             prometheus.Summary
 	UpdateSubscriptionToDBErrors m.Gauge
+	BufferAddToDbSuccess         m.Gauge
+	BufferAddToDBDuration        prometheus.Summary
+	BufferAddToDBErrors          m.Gauge
 }
 
 func initPixelMetrics() *pixelMetrics {
@@ -315,6 +318,9 @@ func initPixelMetrics() *pixelMetrics {
 		UpdateSubscriptionSuccess:    newGaugePixels("update_subscriptions_db_success", "pixels: update subscriptions success"),
 		UpdateDBDuration:             newUpdateDBDuration("subscription_pixel_sent"),
 		UpdateSubscriptionToDBErrors: newGaugePixels("update_subscriptions_db_errors", "pixels: update subscriptions errors"),
+		BufferAddToDbSuccess:         newGaugePixels("pixel_buffer_dropped", "buffer dropped msgs"),
+		BufferAddToDBDuration:        newAddToDBDuration("pixel_buffer"),
+		BufferAddToDBErrors:          newGaugePixels("pixel_buffer_db_errors", "pixel buffer db errors msgs"),
 	}
 	go func() {
 		for range time.Tick(time.Minute) {
@@ -324,6 +330,8 @@ func initPixelMetrics() *pixelMetrics {
 			m.AddToDBErrors.Update()
 			m.UpdateSubscriptionSuccess.Update()
 			m.UpdateSubscriptionToDBErrors.Update()
+			m.BufferAddToDbSuccess.Update()
+			m.BufferAddToDBErrors.Update()
 		}
 	}()
 	return m
