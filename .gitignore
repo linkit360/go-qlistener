@@ -1,6 +1,4 @@
 *~
-Makefile
 bin
 dev/*.sql
 dev/GeoLite2-City.mmdb
-qlistener
