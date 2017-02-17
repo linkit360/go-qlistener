@@ -91,7 +91,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			} else {
 				svc.m.Pixels.AddToDbSuccess.Inc()
 				svc.m.Pixels.AddToDBDuration.Observe(time.Since(begin).Seconds())
-				log.WithFields(log.Fields{
+				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
 			}
@@ -166,9 +166,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			} else {
 				svc.m.Pixels.BufferAddToDBDuration.Observe(time.Since(begin).Seconds())
 				svc.m.Pixels.BufferAddToDbSuccess.Inc()
-				log.WithFields(log.Fields{
-					"event": e.EventName,
-					"took":  time.Since(begin),
+				logCtx.WithFields(log.Fields{
+					"took": time.Since(begin),
 				}).Info("success")
 			}
 		case "remove_buffered":
@@ -194,7 +193,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		default:
 			svc.m.Pixels.Dropped.Inc()
 
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"event": e.EventName,
 				"msg":   "dropped",
 			}).Error("unknown event")
