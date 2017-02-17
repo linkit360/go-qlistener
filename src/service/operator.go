@@ -47,7 +47,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		var e EventNotifyOperatorTransaction
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.Operator.Dropped.Inc()
-			log.WithFields(log.Fields{
+			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "dropped",
 				"body":  string(msg.Body),
@@ -56,7 +56,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 
-		logCtx = log.WithFields(log.Fields{
+		logCtx = logCtx.WithFields(log.Fields{
 			"tid": t.Tid,
 		})
 		if t.RequestBody == "" {
