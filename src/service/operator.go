@@ -14,7 +14,6 @@ type OperatorTransactionLog struct {
 	Msisdn           string    `json:"msisdn,omitempty"`
 	OperatorToken    string    `json:"token,omitempty"`
 	OperatorTime     time.Time `json:"operator_time,omitempty"`
-	Notice           string    `json:"notice,omitempty"`
 	OperatorCode     int64     `json:"operator_code,omitempty"`
 	CountryCode      int64     `json:"country_code,omitempty"`
 	Error            string    `json:"error,omitempty"`
@@ -27,6 +26,7 @@ type OperatorTransactionLog struct {
 	ResponseDecision string    `json:"response_decision,omitempty"`
 	ResponseCode     int       `json:"response_code,omitempty"`
 	SentAt           time.Time `json:"sent_at,omitempty"`
+	Notice           string    `json:"notice,omitempty"`
 	Type             string    `json:"type,omitempty"`
 }
 
@@ -131,10 +131,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			"response_decision, "+
 			"response_code,  "+
 			"sent_at, "+
+			"notice, "+
 			"type "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, "+
-			"$11, $12, $13, $14, $15, $16, $17)",
+			"$11, $12, $13, $14, $15, $16, $17, $18)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -154,6 +155,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.ResponseDecision,
 			t.ResponseCode,
 			t.SentAt,
+			t.Notice,
 			t.Type,
 		); err != nil {
 			svc.m.Common.DBErrors.Inc()

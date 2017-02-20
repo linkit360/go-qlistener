@@ -183,7 +183,10 @@ func unsubscribe(r rec.Record) (err error) {
 		"result = $1, "+
 		"attempts_count = attempts_count + 1, "+
 		"last_pay_attempt_at = $2 "+
-		"WHERE id = (SELECT id FROM %ssubscriptions WHERE msisdn = $3 AND id_service = $4 ORDER BY id LIMIT 1)",
+		"WHERE id = ("+
+		"	SELECT id FROM %ssubscriptions "+
+		"	WHERE msisdn = $3 AND id_service = $4 and result != 'canceled'"+
+		"	ORDER BY id LIMIT 1)",
 		svc.dbConf.TablePrefix,
 		svc.dbConf.TablePrefix,
 	)
