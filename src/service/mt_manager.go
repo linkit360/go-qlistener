@@ -36,9 +36,12 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 		t = e.EventData
+		logCtx = logCtx.WithFields(log.Fields{
+			"e": e.EventName,
+		})
 
 		if (e.EventName != "Unsubscribe" && e.EventName != " UnsubscribeAll") &&
-			(t.Msisdn == "" || t.CampaignId == 0 || t.SubscriptionId == 0) {
+			(t.Msisdn == "" || t.ServiceId == 0 || t.SubscriptionId == 0) {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
