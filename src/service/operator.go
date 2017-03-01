@@ -56,9 +56,13 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		}
 		t = e.EventData
 
-		logCtx = logCtx.WithFields(log.Fields{
-			"tid": t.Tid,
-		})
+		if t.Tid == "" {
+			logCtx.Warn("no tid")
+		} else {
+			logCtx = logCtx.WithFields(log.Fields{
+				"tid": t.Tid,
+			})
+		}
 		if t.RequestBody == "" {
 			logCtx.Warn("no request body")
 		}
@@ -72,9 +76,6 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			logCtx.WithField("dropped", true).
 				Error("no response body and no request body")
 			goto ack
-		}
-		if t.Tid == "" {
-			logCtx.Warn("no tid")
 		}
 		if t.OperatorToken == "" {
 			logCtx.Warn("no operator token")
