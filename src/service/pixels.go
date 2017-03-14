@@ -132,15 +132,17 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 		case "buffer":
 			query := fmt.Sprintf("INSERT INTO %spixel_buffer ( "+
 				"sent_at, "+
+				"id_service, "+
 				"id_campaign, "+
 				"tid, "+
 				"pixel "+
-				") VALUES ( $1, $2, $3, $4)",
+				") VALUES ( $1, $2, $3, $4, $5)",
 				svc.dbConf.TablePrefix)
 
 			begin := time.Now()
 			if _, err := svc.db.Exec(query,
 				t.SentAt,
+				t.ServiceId,
 				t.CampaignId,
 				t.Tid,
 				t.Pixel,
