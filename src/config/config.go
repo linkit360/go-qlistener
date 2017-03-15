@@ -18,12 +18,12 @@ type ServerConfig struct {
 	Port string `default:"50304"`
 }
 type AppConfig struct {
-	AppName           string                       `yaml:"app_name"`
-	Server            ServerConfig                 `yaml:"server"`
-	InMemClientConfig inmem_client.RPCClientConfig `yaml:"inmem_client"`
-	Service           service.ServiceConfig        `yaml:"service"`
-	Consumer          amqp.ConsumerConfig          `yaml:"consumer"`
-	DbConf            db.DataBaseConfig            `yaml:"db"`
+	AppName           string                    `yaml:"app_name"`
+	Server            ServerConfig              `yaml:"server"`
+	InMemClientConfig inmem_client.ClientConfig `yaml:"inmem_client"`
+	Service           service.ServiceConfig     `yaml:"service"`
+	Consumer          amqp.ConsumerConfig       `yaml:"consumer"`
+	DbConf            db.DataBaseConfig         `yaml:"db"`
 }
 
 func LoadConfig() AppConfig {

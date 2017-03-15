@@ -2,7 +2,9 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -257,4 +259,48 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 	}
+}
+
+type IpInfo struct {
+	Ip                  string
+	Country             string
+	Iso                 string
+	City                string
+	Timezone            string
+	Latitude            float64
+	Longitude           float64
+	MetroCode           uint
+	PostalCode          string
+	Subdivisions        string
+	IsAnonymousProxy    bool
+	IsSatelliteProvider bool
+	AccuracyRadius      uint16
+}
+
+func geoIp(ip string) (IpInfo, error) {
+	if ip == "" {
+		return IpInfo{}, errors.New("GeoIP Parse: Empty IP")
+	}
+	record, err := svc.ipDb.City(net.ParseIP(ip))
+	if err != nil {
+		return IpInfo{}, fmt.Errorf("GeoIP Parse City: IP: %s: error: %s", ip, err.Error())
+	}
+	ipInfo := IpInfo{
+		Ip:                  ip,                         // => 81.2.69.142
+		Country:             record.Country.Names["en"], // => United Kingdom
+		Iso:                 record.Country.IsoCode,     // => GB
+		City:                record.City.Names["en"],    //  => Arnold
+		Timezone:            record.Location.TimeZone,   // => Europe/London
+		Latitude:            record.Location.Latitude,   // => 53
+		Longitude:           record.Location.Longitude,  // => -1.1333
+		MetroCode:           record.Location.MetroCode,
+		AccuracyRadius:      record.Location.AccuracyRadius,
+		PostalCode:          record.Postal.Code, // => NG5
+		IsAnonymousProxy:    record.Traits.IsAnonymousProxy,
+		IsSatelliteProvider: record.Traits.IsSatelliteProvider,
+	}
+	if len(record.Subdivisions) > 0 {
+		ipInfo.Subdivisions = record.Subdivisions[0].Names["en"] // => England
+	}
+	return ipInfo, nil
 }

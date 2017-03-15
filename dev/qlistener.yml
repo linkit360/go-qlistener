@@ -10,6 +10,11 @@ inmem_client:
 service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
+  aggregate_sender:
+    enabled: true
+    reporter_client:
+      dsn: 50313
+      timeout: 10
   queues:
     access_campaign:
       enabled: true
