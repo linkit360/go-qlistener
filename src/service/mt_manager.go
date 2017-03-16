@@ -9,6 +9,7 @@ import (
 	"github.com/streadway/amqp"
 
 	reporter_client "github.com/vostrok/reporter/rpcclient"
+	"github.com/vostrok/reporter/server/src/collector"
 	rec "github.com/vostrok/utils/rec"
 )
 
@@ -161,7 +162,11 @@ func writeTransaction(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, Query: %s", err.Error(), query)
 		return
 	}
-
+	reporter_client.IncPaid(collector.Collect{
+		CampaignId:        r.CampaignId,
+		OperatorCode:      r.OperatorCode,
+		TransactionResult: r.Result,
+	})
 	svc.m.MTManager.WriteTransactionDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
@@ -306,13 +311,6 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
-
-	reporter_client.IncMO(rec.Record{
-		CampaignId:   r.CampaignId,
-		OperatorCode: r.OperatorCode,
-		Msisdn:       r.Msisdn,
-		Paid:         r.SubscriptionStatus == "paid",
-	})
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }

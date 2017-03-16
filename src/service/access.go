@@ -15,6 +15,7 @@ import (
 	"github.com/vostrok/dispatcherd/src/rbmq"
 	inmem_client "github.com/vostrok/inmem/rpcclient"
 	reporter_client "github.com/vostrok/reporter/rpcclient"
+	"github.com/vostrok/reporter/server/src/collector"
 	"github.com/vostrok/utils/rec"
 )
 
@@ -247,7 +248,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			"took": time.Since(begin).String(),
 		}).Info("success")
 
-		reporter_client.IncHit(rec.Record{
+		reporter_client.IncHit(collector.Collect{
 			CampaignId:   t.CampaignId,
 			OperatorCode: t.OperatorCode,
 		})

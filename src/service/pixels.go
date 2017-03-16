@@ -10,7 +10,7 @@ import (
 
 	"github.com/vostrok/pixels/src/notifier"
 	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/utils/rec"
+	"github.com/vostrok/reporter/server/src/collector"
 )
 
 type EventNotifyPixel struct {
@@ -89,7 +89,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
-				reporter_client.IncPixel(rec.Record{
+
+				reporter_client.IncPixel(collector.Collect{
 					CampaignId:   t.CampaignId,
 					OperatorCode: t.OperatorCode,
 				})
@@ -154,15 +155,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"error": err.Error(),
 					"msg":   "dropped",
 				}).Error("failed")
-			nackBuffer:
-				if err := msg.Nack(false, true); err != nil {
-					logCtx.WithFields(log.Fields{
-						"event": e.EventName,
-						"error": err.Error(),
-					}).Error("cannot nack")
-					time.Sleep(time.Second)
-					goto nackBuffer
-				}
+
+				msg.Nack(false, true)
 				continue
 			} else {
 				svc.m.Pixels.BufferAddToDBDuration.Observe(time.Since(begin).Seconds())
