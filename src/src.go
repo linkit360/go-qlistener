@@ -23,6 +23,7 @@ func RunServer() {
 		appConfig.AppName,
 		appConfig.Service,
 		appConfig.InMemClientConfig,
+		appConfig.ReporterConfig,
 		appConfig.DbConf,
 		appConfig.Consumer,
 	)

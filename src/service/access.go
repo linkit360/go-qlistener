@@ -11,8 +11,11 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/ua-parser/uap-go/uaparser"
+
 	"github.com/vostrok/dispatcherd/src/rbmq"
 	inmem_client "github.com/vostrok/inmem/rpcclient"
+	reporter_client "github.com/vostrok/reporter/rpcclient"
+	"github.com/vostrok/utils/rec"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -232,14 +235,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"msg":   "requeue",
 				"query": query,
 			}).Error("failed")
-		nack:
-			if err := msg.Nack(false, true); err != nil {
-				logCtx.WithFields(log.Fields{
-					"error": err.Error(),
-				}).Error("cannot nack")
-				time.Sleep(time.Second)
-				goto nack
-			}
+
+			msg.Nack(false, true)
 			continue
 		}
 		svc.m.AccessCampaign.AddToDbSuccess.Inc()
@@ -249,6 +246,11 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),
 		}).Info("success")
+
+		reporter_client.IncHit(rec.Record{
+			CampaignId:   t.CampaignId,
+			OperatorCode: t.OperatorCode,
+		})
 
 	ack:
 		if err := msg.Ack(false); err != nil {

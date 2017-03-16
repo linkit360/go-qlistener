@@ -9,6 +9,8 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/vostrok/pixels/src/notifier"
+	reporter_client "github.com/vostrok/reporter/rpcclient"
+	"github.com/vostrok/utils/rec"
 )
 
 type EventNotifyPixel struct {
@@ -79,14 +81,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"error": err.Error(),
 					"msg":   "dropped",
 				}).Error("failed")
-			nackTransaction:
-				if err := msg.Nack(false, true); err != nil {
-					logCtx.WithFields(log.Fields{
-						"error": err.Error(),
-					}).Error("cannot nack")
-					time.Sleep(time.Second)
-					goto nackTransaction
-				}
+				msg.Nack(false, true)
 				continue
 			} else {
 				svc.m.Pixels.AddToDbSuccess.Inc()
@@ -94,6 +89,10 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
+				reporter_client.IncPixel(rec.Record{
+					CampaignId:   t.CampaignId,
+					OperatorCode: t.OperatorCode,
+				})
 			}
 
 		case "update":

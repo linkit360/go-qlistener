@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"fmt"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/oschwald/geoip2-golang"
@@ -37,15 +38,9 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	GeoIpPath           string                `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	UAParserRegexesPath string                `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
-	AggregateSender     AggregateSenderConfig `yaml:"aggregate_sender"`
-	Queue               QueuesConfig          `yaml:"queues"`
-}
-
-type AggregateSenderConfig struct {
-	Enabled              bool                         `yaml:"enabled"`
-	AcceptorClientConfig reporter_client.ClientConfig `yaml:"reporter_client"`
+	GeoIpPath           string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	UAParserRegexesPath string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
+	Queue               QueuesConfig `yaml:"queues"`
 }
 
 type Consumers struct {
@@ -74,19 +69,21 @@ func InitService(
 	name string,
 	sConf ServiceConfig,
 	inMemConfig inmem_client.ClientConfig,
+	reporterConfig reporter_client.ClientConfig,
 	dbConf db.DataBaseConfig,
 	consumerConf amqp.ConsumerConfig,
 ) {
 	log.SetLevel(log.DebugLevel)
 	appName = name
-	if sConf.AggregateSender.Enabled {
-		svc.as.Init(sConf.AggregateSender.AcceptorClientConfig)
-	}
 
 	inmem_client.Init(inMemConfig)
 	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf
 	svc.dbConf = dbConf
+
+	if err := reporter_client.Init(reporterConfig); err != nil && reporterConfig.Enabled {
+		log.Fatal(fmt.Errorf("reporter_client.Init: %s", err.Error()))
+	}
 
 	var err error
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)

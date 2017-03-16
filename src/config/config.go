@@ -10,6 +10,7 @@ import (
 
 	inmem_client "github.com/vostrok/inmem/rpcclient"
 	"github.com/vostrok/qlistener/src/service"
+	reporter_client "github.com/vostrok/reporter/rpcclient"
 	"github.com/vostrok/utils/amqp"
 	"github.com/vostrok/utils/db"
 )
@@ -18,12 +19,13 @@ type ServerConfig struct {
 	Port string `default:"50304"`
 }
 type AppConfig struct {
-	AppName           string                    `yaml:"app_name"`
-	Server            ServerConfig              `yaml:"server"`
-	InMemClientConfig inmem_client.ClientConfig `yaml:"inmem_client"`
-	Service           service.ServiceConfig     `yaml:"service"`
-	Consumer          amqp.ConsumerConfig       `yaml:"consumer"`
-	DbConf            db.DataBaseConfig         `yaml:"db"`
+	AppName           string                       `yaml:"app_name"`
+	Server            ServerConfig                 `yaml:"server"`
+	InMemClientConfig inmem_client.ClientConfig    `yaml:"inmem_client"`
+	ReporterConfig    reporter_client.ClientConfig `yaml:"reporter_client"`
+	Service           service.ServiceConfig        `yaml:"service"`
+	Consumer          amqp.ConsumerConfig          `yaml:"consumer"`
+	DbConf            db.DataBaseConfig            `yaml:"db"`
 }
 
 func LoadConfig() AppConfig {

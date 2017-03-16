@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
+	reporter_client "github.com/vostrok/reporter/rpcclient"
 	rec "github.com/vostrok/utils/rec"
 )
 
@@ -306,6 +307,12 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		return
 	}
 
+	reporter_client.IncMO(rec.Record{
+		CampaignId:   r.CampaignId,
+		OperatorCode: r.OperatorCode,
+		Msisdn:       r.Msisdn,
+		Paid:         r.SubscriptionStatus == "paid",
+	})
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
