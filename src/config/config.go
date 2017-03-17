@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/configor"
 
+	"fmt"
 	inmem_client "github.com/vostrok/inmem/rpcclient"
 	"github.com/vostrok/qlistener/src/service"
 	reporter_client "github.com/vostrok/reporter/rpcclient"
@@ -50,7 +51,7 @@ func LoadConfig() AppConfig {
 
 	appConfig.Service.GeoIpPath = envString("GEOIP_PATH", appConfig.Service.GeoIpPath)
 
-	log.WithField("config", appConfig).Info("Config loaded")
+	log.WithField("config", fmt.Sprintf("%#v", appConfig)).Info("Config loaded")
 	return appConfig
 }
 

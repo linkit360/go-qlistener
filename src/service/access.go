@@ -16,7 +16,6 @@ import (
 	inmem_client "github.com/vostrok/inmem/rpcclient"
 	reporter_client "github.com/vostrok/reporter/rpcclient"
 	"github.com/vostrok/reporter/server/src/collector"
-	"github.com/vostrok/utils/rec"
 )
 
 type EventNotifyAccessCampaign struct {

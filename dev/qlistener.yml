@@ -9,7 +9,7 @@ inmem_client:
 
 reporter_client:
   enabled: true
-  dsn: :50316
+  dsn: :50315
   timeout: 10
 
 service:
