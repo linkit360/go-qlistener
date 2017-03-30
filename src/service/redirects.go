@@ -7,7 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	redirect_service "github.com/vostrok/partners/service"
+	redirect_service "github.com/linkit360/go-partners/service"
 )
 
 type EventNotifyRedirects struct {

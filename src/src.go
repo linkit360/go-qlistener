@@ -11,9 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/vostrok/qlistener/src/config"
-	"github.com/vostrok/qlistener/src/service"
-	m "github.com/vostrok/utils/metrics"
+	"github.com/linkit360/go-qlistener/src/config"
+	"github.com/linkit360/go-qlistener/src/service"
+	m "github.com/linkit360/go-utils/metrics"
 )
 
 func RunServer() {

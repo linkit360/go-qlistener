@@ -12,10 +12,10 @@ import (
 
 	"github.com/ua-parser/uap-go/uaparser"
 
-	"github.com/vostrok/dispatcherd/src/rbmq"
-	inmem_client "github.com/vostrok/inmem/rpcclient"
-	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/reporter/server/src/collector"
+	"github.com/linkit360/go-dispatcherd/src/rbmq"
+	inmem_client "github.com/linkit360/go-inmem/rpcclient"
+	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	"github.com/linkit360/go-reporter/server/src/collector"
 )
 
 type EventNotifyAccessCampaign struct {

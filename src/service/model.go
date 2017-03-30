@@ -9,11 +9,11 @@ import (
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	inmem_client "github.com/vostrok/inmem/rpcclient"
-	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/utils/amqp"
-	"github.com/vostrok/utils/config"
-	"github.com/vostrok/utils/db"
+	inmem_client "github.com/linkit360/go-inmem/rpcclient"
+	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	"github.com/linkit360/go-utils/amqp"
+	"github.com/linkit360/go-utils/config"
+	"github.com/linkit360/go-utils/db"
 )
 
 var svc Service
@@ -82,7 +82,7 @@ func InitService(
 	svc.dbConf = dbConf
 
 	if err := reporter_client.Init(reporterConfig); err != nil && reporterConfig.Enabled {
-		log.Fatal(fmt.Errorf("reporter_client.Init: %s", err.Error()))
+		log.Error(fmt.Errorf("reporter_client.Init: %s", err.Error()))
 	}
 
 	var err error

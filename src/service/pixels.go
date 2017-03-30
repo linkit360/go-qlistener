@@ -8,9 +8,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	"github.com/vostrok/pixels/src/notifier"
-	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/reporter/server/src/collector"
+	"github.com/linkit360/go-pixel/src/notifier"
+	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	"github.com/linkit360/go-reporter/server/src/collector"
 )
 
 type EventNotifyPixel struct {

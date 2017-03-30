@@ -8,9 +8,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/reporter/server/src/collector"
-	rec "github.com/vostrok/utils/rec"
+	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	"github.com/linkit360/go-reporter/server/src/collector"
+	rec "github.com/linkit360/go-utils/rec"
 )
 
 type EventNotifyRec struct {

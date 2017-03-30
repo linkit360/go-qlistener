@@ -9,11 +9,11 @@ import (
 	"github.com/jinzhu/configor"
 
 	"fmt"
-	inmem_client "github.com/vostrok/inmem/rpcclient"
-	"github.com/vostrok/qlistener/src/service"
-	reporter_client "github.com/vostrok/reporter/rpcclient"
-	"github.com/vostrok/utils/amqp"
-	"github.com/vostrok/utils/db"
+	inmem_client "github.com/linkit360/go-inmem/rpcclient"
+	"github.com/linkit360/go-qlistener/src/service"
+	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	"github.com/linkit360/go-utils/amqp"
+	"github.com/linkit360/go-utils/db"
 )
 
 type ServerConfig struct {

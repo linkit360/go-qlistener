@@ -3,12 +3,12 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	"github.com/vostrok/dispatcherd/src/rbmq"
-	"time"
+	"github.com/linkit360/go-dispatcherd/src/rbmq"
 )
 
 type EventNotifyUserActions struct {
