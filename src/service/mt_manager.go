@@ -43,7 +43,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		})
 
 		if (e.EventName != "Unsubscribe" && e.EventName != " UnsubscribeAll") &&
-			(t.Msisdn == "" || t.ServiceId == 0 || t.SubscriptionId == 0) {
+			(t.Msisdn == "" || t.ServiceId == 0) {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
