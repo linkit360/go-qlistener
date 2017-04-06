@@ -81,8 +81,8 @@ func InitService(
 	svc.sConfig = sConf
 	svc.dbConf = dbConf
 
-	if err := reporter_client.Init(reporterConfig); err != nil && reporterConfig.Enabled {
-		log.Error(fmt.Errorf("reporter_client.Init: %s", err.Error()))
+	if err := reporter_client.Init(reporterConfig); err != nil {
+		log.Fatal(fmt.Errorf("reporter_client.Init: %s", err.Error()))
 	}
 
 	var err error

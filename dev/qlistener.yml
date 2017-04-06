@@ -8,7 +8,6 @@ inmem_client:
   timeout: 10
 
 reporter_client:
-  enabled: true
   dsn: :50315
   timeout: 10
 

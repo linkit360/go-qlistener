@@ -246,12 +246,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),
 		}).Info("success")
-
-		reporter_client.IncHit(collector.Collect{
-			CampaignId:   t.CampaignId,
-			OperatorCode: t.OperatorCode,
-		})
-
 	ack:
 		if err := msg.Ack(false); err != nil {
 			logCtx.WithFields(log.Fields{
@@ -260,6 +254,11 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			time.Sleep(time.Second)
 			goto ack
 		}
+
+		reporter_client.IncHit(collector.Collect{
+			CampaignId:   t.CampaignId,
+			OperatorCode: t.OperatorCode,
+		})
 	}
 }
 
