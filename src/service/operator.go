@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -114,6 +115,8 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.Type = "charge"
 		}
 
+		t.Notice = strings.Replace(t.Notice, "0x00", "", -1)
+
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %soperator_transaction_log ("+
 			"tid, "+
@@ -166,6 +169,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"msg":   "requeue",
 				"query": query,
+				"t":     fmt.Sprintf("%#v", t),
 			}).Error("failed")
 		nack:
 			if err := msg.Nack(false, true); err != nil {

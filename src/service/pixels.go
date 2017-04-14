@@ -119,7 +119,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
-				}).Error("failed")
+				}).Error("requeue")
 
 				msg.Nack(false, true)
 				continue
@@ -147,17 +147,16 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				t.Tid,
 				t.Pixel,
 			); err != nil {
+
 				svc.m.Common.DBErrors.Inc()
 				svc.m.Pixels.BufferAddToDBErrors.Inc()
 
 				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
-					"msg":   "dropped",
-				}).Error("failed")
+				}).Error("dropped")
 
-				msg.Nack(false, true)
-				continue
+				goto ack
 			} else {
 				svc.m.Pixels.BufferAddToDBDuration.Observe(time.Since(begin).Seconds())
 				svc.m.Pixels.BufferAddToDbSuccess.Inc()
@@ -176,8 +175,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"query": query,
 					"error": err.Error(),
-					"msg":   "dropped",
-				}).Error("failed")
+				}).Error("requeue")
 				msg.Nack(false, true)
 				continue
 			} else {
