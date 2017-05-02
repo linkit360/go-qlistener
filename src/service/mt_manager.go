@@ -297,6 +297,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
 		"result = $1, "+
 		"last_pay_attempt_at = $2 "+
+		"attempts_count = attempts_count + 1 "+
 		"where id = $3",
 		svc.dbConf.TablePrefix,
 	)
@@ -436,7 +437,7 @@ func startRetry(r rec.Record) (err error) {
 			log.WithFields(fields).Debug("add retry")
 		}
 	}()
-	if r.KeepDays == 0 {
+	if r.RetryDays == 0 {
 		err = fmt.Errorf("Retry Keep Days required, service id: %s", r.ServiceId)
 		return
 	}
@@ -460,7 +461,7 @@ func startRetry(r rec.Record) (err error) {
 	)
 	if _, err = svc.db.Exec(query,
 		&r.Tid,
-		&r.KeepDays,
+		&r.RetryDays,
 		&r.DelayHours,
 		&r.Msisdn,
 		&r.OperatorCode,

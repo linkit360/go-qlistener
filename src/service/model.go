@@ -33,7 +33,6 @@ type Service struct {
 	uaparser                   *uaparser.Parser
 	sConfig                    ServiceConfig
 	dbConf                     db.DataBaseConfig
-	tables                     map[string]struct{}
 	m                          Metrics
 }
 
@@ -102,40 +101,13 @@ func InitService(
 	svc.m = newMetrics(appName)
 
 	svc.consumer = Consumers{
-		Access:      initConsumer(consumerConf, sConf.Queue.AccessCampaign, svc.accessCampaignChan, processAccessCampaign),
-		UserActions: initConsumer(consumerConf, sConf.Queue.UserActions, svc.userActionsChan, processUserActions),
-		ContentSent: initConsumer(consumerConf, sConf.Queue.ContentSent, svc.contentSentChan, processContentSent),
-		UniqueUrl:   initConsumer(consumerConf, sConf.Queue.UniqueUrls, svc.uniqueUrlsChan, processUniqueUrls),
-		Operator:    initConsumer(consumerConf, sConf.Queue.TransactionLog, svc.operatorTransactionLogChan, operatorTransactions),
-		MTManager:   initConsumer(consumerConf, sConf.Queue.MTManager, svc.mtManagerChan, processMTManagerTasks),
-		Pixels:      initConsumer(consumerConf, sConf.Queue.PixelSent, svc.pixelsChan, processPixels),
-		Redirects:   initConsumer(consumerConf, sConf.Queue.Redirects, svc.redirectsChan, processRedirects),
+		Access:      amqp.InitConsumer(consumerConf, sConf.Queue.AccessCampaign, svc.accessCampaignChan, processAccessCampaign),
+		UserActions: amqp.InitConsumer(consumerConf, sConf.Queue.UserActions, svc.userActionsChan, processUserActions),
+		ContentSent: amqp.InitConsumer(consumerConf, sConf.Queue.ContentSent, svc.contentSentChan, processContentSent),
+		UniqueUrl:   amqp.InitConsumer(consumerConf, sConf.Queue.UniqueUrls, svc.uniqueUrlsChan, processUniqueUrls),
+		Operator:    amqp.InitConsumer(consumerConf, sConf.Queue.TransactionLog, svc.operatorTransactionLogChan, operatorTransactions),
+		MTManager:   amqp.InitConsumer(consumerConf, sConf.Queue.MTManager, svc.mtManagerChan, processMTManagerTasks),
+		Pixels:      amqp.InitConsumer(consumerConf, sConf.Queue.PixelSent, svc.pixelsChan, processPixels),
+		Redirects:   amqp.InitConsumer(consumerConf, sConf.Queue.Redirects, svc.redirectsChan, processRedirects),
 	}
-}
-
-func initConsumer(
-	consumerConf amqp.ConsumerConfig,
-	queueConf config.ConsumeQueueConfig,
-	readChan <-chan amqp_driver.Delivery,
-	fn func(<-chan amqp_driver.Delivery),
-) *amqp.Consumer {
-	if !queueConf.Enabled {
-		log.Infof("rbmq consumer disabled: %s ", queueConf.Name)
-		return nil
-	}
-
-	consumer := amqp.NewConsumer(consumerConf, queueConf.Name, queueConf.PrefetchCount)
-	if err := consumer.Connect(); err != nil {
-		log.Fatal("rbmq connect: ", err.Error())
-	}
-
-	amqp.InitQueue(
-		consumer,
-		readChan,
-		fn,
-		queueConf.ThreadsCount,
-		queueConf.Name,
-		queueConf.Name,
-	)
-	return consumer
 }
