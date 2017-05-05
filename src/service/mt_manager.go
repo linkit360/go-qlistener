@@ -124,7 +124,7 @@ func writeTransaction(r rec.Record) (err error) {
 		}
 		if err != nil {
 			fields["error"] = err.Error()
-			log.WithFields(fields).Error("write transaction")
+			log.WithFields(fields).Error("write transaction error")
 		} else {
 			log.WithFields(fields).Debug("write transaction")
 		}
@@ -162,11 +162,14 @@ func writeTransaction(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, Query: %s", err.Error(), query)
 		return
 	}
+
 	reporter_client.IncPaid(collector.Collect{
 		CampaignId:        r.CampaignId,
 		OperatorCode:      r.OperatorCode,
 		TransactionResult: r.Result,
+		AttemptsCount:     r.AttemptsCount,
 	})
+
 	svc.m.MTManager.WriteTransactionDuration.Observe(time.Since(begin).Seconds())
 	svc.m.MTManager.AddToDBDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
@@ -212,6 +215,7 @@ func unsubscribe(r rec.Record) (err error) {
 		return
 	}
 	svc.m.MTManager.UnsubscribeDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 func unsubscribeAll(r rec.Record) (err error) {
@@ -248,6 +252,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 		return
 	}
 	svc.m.MTManager.UnsubscribeAllDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 func writeSubscriptionPeriodic(r rec.Record) (err error) {
@@ -277,6 +282,7 @@ func writeSubscriptionPeriodic(r rec.Record) (err error) {
 		return
 	}
 	svc.m.MTManager.WriteSubscriptionPeriodicDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
@@ -313,6 +319,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		return
 	}
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
+	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
 
