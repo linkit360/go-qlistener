@@ -86,6 +86,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
+				"body":  string(msg.Body),
 			}).Error("failed")
 			msg.Nack(false, true)
 			continue

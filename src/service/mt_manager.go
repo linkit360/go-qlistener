@@ -181,9 +181,11 @@ func unsubscribe(r rec.Record) (err error) {
 	r.SubscriptionStatus = "canceled"
 	defer func() {
 		fields := log.Fields{
-			"tid":    r.Tid,
-			"result": r.SubscriptionStatus,
-			"took":   time.Since(begin),
+			"tid":        r.Tid,
+			"service_id": r.ServiceId,
+			"msisdn":     r.Msisdn,
+			"result":     r.SubscriptionStatus,
+			"took":       time.Since(begin),
 		}
 		if err != nil {
 			fields["error"] = err.Error()
