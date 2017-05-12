@@ -163,9 +163,11 @@ func writeTransaction(r rec.Record) (err error) {
 		return
 	}
 
-	reporter_client.IncPaid(collector.Collect{
+	reporter_client.IncTransaction(collector.Collect{
 		CampaignId:        r.CampaignId,
 		OperatorCode:      r.OperatorCode,
+		Msisdn:            r.Msisdn,
+		Price:             r.Price,
 		TransactionResult: r.Result,
 		AttemptsCount:     r.AttemptsCount,
 	})
