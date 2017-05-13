@@ -16,6 +16,7 @@ import (
 	inmem_client "github.com/linkit360/go-inmem/rpcclient"
 	reporter_client "github.com/linkit360/go-reporter/rpcclient"
 	"github.com/linkit360/go-reporter/server/src/collector"
+	"strings"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -36,6 +37,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		var browser string
 		var begin time.Time
 		var query string
+		var IPs []string
 		var ua *uaparser.Client
 		var e EventNotifyAccessCampaign
 		var t rbmq.AccessCampaignNotify
@@ -92,15 +94,20 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}
 		}
 
-		ipInfo, err = geoIp(t.IP)
-		if err != nil {
-			svc.m.AccessCampaign.ErrorsParseGeoIp.Inc()
-			logCtx.WithFields(log.Fields{
-				"IP":       t.IP,
-				"parseErr": err.Error(),
-			}).Debug("parse geo ip city, continued..")
+		IPs = strings.Split(t.IP, ", ")
+		for _, ip := range IPs {
+			ipInfo, err = geoIp(ip)
+			if err == nil {
+				break
+			}
+			if err != nil {
+				logCtx.WithFields(log.Fields{
+					"IP":       t.IP,
+					"parseErr": err.Error(),
+				}).Debug("parse geo ip continued..")
+			}
+			err = nil
 		}
-		err = nil
 
 		ua = svc.uaparser.Parse(t.UserAgent)
 		os = ua.Os.ToString()
@@ -233,6 +240,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 				"msg":   "requeue",
+				"body":  string(msg.Body),
 				"query": query,
 			}).Error("failed")
 
@@ -258,6 +266,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		reporter_client.IncHit(collector.Collect{
 			CampaignId:   t.CampaignId,
 			OperatorCode: t.OperatorCode,
+			Msisdn:       t.Msisdn,
 		})
 	}
 }
