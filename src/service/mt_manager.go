@@ -327,7 +327,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
-		TransactionResult: r.Result,
+		TransactionResult: r.SubscriptionStatus,
 		AttemptsCount:     r.AttemptsCount,
 	})
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
