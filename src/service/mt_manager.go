@@ -322,6 +322,14 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+	reporter_client.IncOutflow(collector.Collect{
+		CampaignId:        r.CampaignId,
+		OperatorCode:      r.OperatorCode,
+		Msisdn:            r.Msisdn,
+		Price:             r.Price,
+		TransactionResult: r.Result,
+		AttemptsCount:     r.AttemptsCount,
+	})
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
