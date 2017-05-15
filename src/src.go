@@ -14,6 +14,7 @@ import (
 	"github.com/linkit360/go-qlistener/src/config"
 	"github.com/linkit360/go-qlistener/src/service"
 	m "github.com/linkit360/go-utils/metrics"
+	"os"
 )
 
 func RunServer() {
@@ -39,4 +40,9 @@ func RunServer() {
 	r.Run(":" + appConfig.Server.Port)
 
 	log.WithField("port", appConfig.Server.Port).Info("Qlistener init")
+}
+
+func OnExit() {
+	log.WithField("pid", os.Getpid()).Info("on exit")
+	service.OnExit()
 }

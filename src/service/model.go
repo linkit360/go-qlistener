@@ -64,6 +64,12 @@ type QueuesConfig struct {
 	Redirects      config.ConsumeQueueConfig `yaml:"redirect"`
 }
 
+func OnExit() {
+	if err := reporter_client.SaveState(); err != nil {
+		log.WithField("error", err.Error()).Error("reporter save state")
+	}
+}
+
 func InitService(
 	name string,
 	sConf ServiceConfig,

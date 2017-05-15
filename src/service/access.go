@@ -100,13 +100,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			if err == nil {
 				break
 			}
-			if err != nil {
-				logCtx.WithFields(log.Fields{
-					"IP":       t.IP,
-					"parseErr": err.Error(),
-				}).Debug("parse geo ip continued..")
-			}
-			err = nil
 		}
 
 		ua = svc.uaparser.Parse(t.UserAgent)
