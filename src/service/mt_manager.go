@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -208,7 +209,8 @@ func unsubscribe(r rec.Record) (err error) {
 	)
 
 	lastPayAttemptAt := r.SentAt
-	_, err = svc.db.Exec(query,
+	var res sql.Result
+	res, err = svc.db.Exec(query,
 		r.SubscriptionStatus,
 		lastPayAttemptAt,
 		r.Msisdn,
@@ -218,36 +220,94 @@ func unsubscribe(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		err = fmt.Errorf("res.RowsAffected: %s", err.Error())
+		return
+	}
+	if count > 0 {
+		reporter_client.IncOutflow(collector.Collect{
+			CampaignId:        r.CampaignId,
+			OperatorCode:      r.OperatorCode,
+			Msisdn:            r.Msisdn,
+			Price:             r.Price,
+			TransactionResult: r.SubscriptionStatus,
+			AttemptsCount:     r.AttemptsCount,
+		})
+	}
 	svc.m.MTManager.UnsubscribeDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
 }
+
 func unsubscribeAll(r rec.Record) (err error) {
 	begin := time.Now()
-	r.SubscriptionStatus = "canceled"
+	r.SubscriptionStatus = "purged"
+	if r.OutFlowReason == "" {
+		r.OutFlowReason = "purge request"
+	}
+	fields := log.Fields{
+		"tid":    r.Tid,
+		"result": r.SubscriptionStatus,
+		"took":   time.Since(begin),
+	}
 	defer func() {
-		fields := log.Fields{
-			"tid":    r.Tid,
-			"result": r.SubscriptionStatus,
-			"took":   time.Since(begin),
-		}
 		if err != nil {
 			fields["error"] = err.Error()
 			fields["rec"] = fmt.Sprintf("%#v", r)
 		}
 		log.WithFields(fields).Debug("unsubscribe")
 	}()
-	query := fmt.Sprintf("UPDATE %ssubscriptions SET "+
+
+	query := fmt.Sprintf("SELECT "+
+		"id, "+
+		"id_campaign, "+
+		"operator_code, "+
+		"attempts_count "+
+		"FROM %ssubscriptions "+
+		"WHERE msisdn = $1 AND "+
+		"result NOT IN ('canceled', 'purged', 'rejected', 'blacklisted', 'postpaid')",
+		svc.dbConf.TablePrefix,
+	)
+	rowsUns, err := svc.db.Query(query, r.Msisdn)
+	if err != nil {
+		svc.m.Common.DBErrors.Inc()
+		err = fmt.Errorf("db.Query: %s, query: %s", err.Error(), query)
+		return err
+	}
+	defer rowsUns.Close()
+
+	var unsubscribedRecs []rec.Record
+	for rowsUns.Next() {
+		t := rec.Record{}
+		if err := rowsUns.Scan(
+			&t.SubscriptionId,
+			&t.CampaignId,
+			&t.OperatorCode,
+			&t.AttemptsCount,
+		); err != nil {
+			err = fmt.Errorf("rows.Scan: %s", err.Error())
+			return err
+		}
+		unsubscribedRecs = append(unsubscribedRecs, t)
+	}
+
+	query = fmt.Sprintf("UPDATE %ssubscriptions SET "+
 		"result = $1, "+
-		"attempts_count = attempts_count + 1, "+
-		"last_pay_attempt_at = $2 "+
-		"WHERE msisdn = $3",
+		"outflow_reason = $2, "+
+		"last_pay_attempt_at = $3 "+
+		"WHERE msisdn = $4 AND "+
+		"result NOT IN ('canceled', 'purged', 'rejected', 'blacklisted', 'postpaid')",
 		svc.dbConf.TablePrefix,
 	)
 
 	lastPayAttemptAt := r.SentAt
-	_, err = svc.db.Exec(query,
+
+	var res sql.Result
+	res, err = svc.db.Exec(query,
 		r.SubscriptionStatus,
+		r.OutFlowReason,
 		lastPayAttemptAt,
 		r.Msisdn,
 	)
@@ -255,6 +315,39 @@ func unsubscribeAll(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
+
+	if count, err := res.RowsAffected(); err == nil {
+		if count != int64(len(unsubscribedRecs)) {
+			fields["affected"] = count
+			fields["unsubs"] = len(unsubscribedRecs)
+			log.WithFields(fields).Error("unsubscribe count mismatch")
+			delete(fields, "affected")
+			delete(fields, "unsubs")
+		}
+		if count == 0 {
+			log.WithFields(fields).Debug("nothing was purged")
+		}
+	} else {
+		err = fmt.Errorf("res.RowsAffected: %s", err.Error())
+		fields["error"] = err.Error()
+		log.WithFields(fields).Debug("cannot get count affected purge request")
+		delete(fields, "error")
+	}
+
+	for _, t := range unsubscribedRecs {
+		reporter_client.IncOutflow(collector.Collect{
+			CampaignId:        t.CampaignId,
+			OperatorCode:      t.OperatorCode,
+			Msisdn:            t.Msisdn,
+			Price:             0,
+			TransactionResult: r.SubscriptionStatus, // as we set in the begining
+			AttemptsCount:     t.AttemptsCount,
+		})
+	}
+	if len(unsubscribedRecs) == 0 {
+		log.WithFields(fields).Debug("nothing to purge")
+	}
+
 	svc.m.MTManager.UnsubscribeAllDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil

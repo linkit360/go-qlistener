@@ -240,6 +240,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			msg.Nack(false, true)
 			continue
 		}
+
 		svc.m.AccessCampaign.AddToDbSuccess.Inc()
 		svc.m.AccessCampaign.AddToDbDuration.Observe(time.Since(begin).Seconds())
 		svc.m.Common.DBInsertDuration.Observe(time.Since(begin).Seconds())
