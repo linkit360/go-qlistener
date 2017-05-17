@@ -43,6 +43,6 @@ func RunServer() {
 }
 
 func OnExit() {
-	log.WithField("pid", os.Getpid()).Info("on exit")
 	service.OnExit()
+	log.WithField("pid", os.Getpid()).Info("on exit")
 }

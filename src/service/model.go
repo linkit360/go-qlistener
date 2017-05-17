@@ -37,9 +37,10 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	GeoIpPath           string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
-	UAParserRegexesPath string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
-	Queue               QueuesConfig `yaml:"queues"`
+	GeoIpPath              string       `yaml:"geoip_path" default:"dev/GeoLite2-City.mmdb"`
+	UAParserRegexesPath    string       `default:"/home/centos/linkit/regexes.yaml" yaml:"ua_parser_regexes_path"`
+	PixelBufferTimoutHours int          `yaml:"pixel_buffer_timeout_hours" default:"24"`
+	Queue                  QueuesConfig `yaml:"queues"`
 }
 
 type Consumers struct {

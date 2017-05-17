@@ -137,7 +137,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				"tid, "+
 				"pixel "+
 				") VALUES ( $1, $2, $3, $4, $5)",
-				svc.dbConf.TablePrefix)
+				svc.dbConf.TablePrefix,
+			)
 
 			begin := time.Now()
 			if _, err := svc.db.Exec(query,
@@ -163,6 +164,26 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				logCtx.WithFields(log.Fields{
 					"took": time.Since(begin),
 				}).Info("success")
+			}
+
+			begin = time.Now().UTC()
+			query = fmt.Sprintf("DELETE FROM "+
+				"%spixel_buffer WHERE sent_at < "+
+				"(CURRENT_TIMESTAMP - %d * INTERVAL '1 hour' )",
+				svc.dbConf.TablePrefix,
+				svc.sConfig.PixelBufferTimoutHours,
+			)
+			if _, err := svc.db.Exec(query); err != nil {
+				svc.m.Common.DBErrors.Inc()
+				logCtx.WithFields(log.Fields{
+					"query": query,
+					"error": err.Error(),
+				}).Error("haven't cleaned pixel")
+
+			} else {
+				logCtx.WithFields(log.Fields{
+					"took": time.Since(begin),
+				}).Info("cleaned pixel buffers")
 			}
 		case "remove_buffered":
 			query := fmt.Sprintf("delete from %spixel_buffer WHERE id_campaign = $1 AND pixel = $2 ",
