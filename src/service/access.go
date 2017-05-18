@@ -77,7 +77,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}).Warn("no urlpath")
 			goto ack
 		}
-		if t.CampaignId == 0 {
+		if t.CampaignCode == "" {
 			if t.CampaignHash != "" {
 				camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
 				if err != nil {
@@ -86,8 +86,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 					err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
 					logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
 				} else {
-					t.CampaignId = camp.Id
-					t.ServiceId = camp.ServiceId
+					t.CampaignCode = camp.Code
+					t.ServiceCode = camp.ServiceCode
 				}
 			} else {
 				logCtx.Error("campaign hash and id empty")
@@ -211,8 +211,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			t.Method,
 			t.Headers,
 			t.Error,
-			t.CampaignId,
-			t.ServiceId,
+			t.CampaignCode,
+			t.ServiceCode,
 			t.ContentId,
 			ipInfo.Country,
 			ipInfo.Iso,
@@ -258,7 +258,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 
 		reporter_client.IncHit(collector.Collect{
-			CampaignId:   t.CampaignId,
+			Tid:          t.Tid,
+			CampaignCode: t.CampaignCode,
 			OperatorCode: t.OperatorCode,
 			Msisdn:       t.Msisdn,
 		})

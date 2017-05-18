@@ -17,11 +17,11 @@ type OperatorTransactionLog struct {
 	OperatorTime     time.Time `json:"operator_time,omitempty"`
 	OperatorCode     int64     `json:"operator_code,omitempty"`
 	CountryCode      int64     `json:"country_code,omitempty"`
+	ServiceCode      string    `json:"service_code,omitempty"`
+	CampaignCode     string    `json:"campaign_code,omitempty"`
+	SubscriptionId   int64     `json:"id_subscription,omitempty"`
 	Error            string    `json:"error,omitempty"`
 	Price            int       `json:"price,omitempty"`
-	ServiceId        int64     `json:"id_service,omitempty"`
-	SubscriptionId   int64     `json:"id_subscription,omitempty"`
-	CampaignId       int64     `json:"id_campaign,omitempty"`
 	RequestBody      string    `json:"request_body,omitempty"`
 	ResponseBody     string    `json:"response_body,omitempty"`
 	ResponseDecision string    `json:"response_decision,omitempty"`
@@ -90,14 +90,14 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		if t.Price == 0 {
 			logCtx.Warn("no price")
 		}
-		if t.ServiceId == 0 {
-			logCtx.Warn("no service id")
+		if t.ServiceCode == "" {
+			logCtx.Warn("no service code")
+		}
+		if t.CampaignCode == "" {
+			logCtx.Warn("no campaign code")
 		}
 		if t.SubscriptionId == 0 {
 			logCtx.Warn("no subscription id")
-		}
-		if t.CampaignId == 0 {
-			logCtx.Warn("no campaign id")
 		}
 		if t.ResponseCode == 0 {
 			logCtx.Warn("no response code")
@@ -151,9 +151,9 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			t.OperatorTime,
 			t.Error,
 			t.Price,
-			t.ServiceId,
+			t.ServiceCode,
 			t.SubscriptionId,
-			t.CampaignId,
+			t.CampaignCode,
 			t.RequestBody,
 			t.ResponseBody,
 			t.ResponseDecision,

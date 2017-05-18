@@ -37,8 +37,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 		})
 
 		if e.EventName == "create" {
-			if t.CampaignId == 0 ||
-				t.ServiceId == 0 {
+			if t.CampaignCode == "" ||
+				t.ServiceCode == "" {
 				svc.m.UniqueUrls.Dropped.Inc()
 				svc.m.UniqueUrls.Empty.Inc()
 
@@ -79,8 +79,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.SentAt,
 				t.Msisdn,
 				t.Tid,
-				t.CampaignId,
-				t.ServiceId,
+				t.CampaignCode,
+				t.ServiceCode,
 				t.ContentId,
 				t.SubscriptionId,
 				t.CountryCode,

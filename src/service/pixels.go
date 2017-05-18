@@ -67,7 +67,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				t.Msisdn,
 				t.Pixel,
 				t.Endpoint,
-				t.CampaignId,
+				t.CampaignCode,
 				t.OperatorCode,
 				t.CountryCode,
 				t.Publisher,
@@ -91,7 +91,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				}).Info("success")
 
 				reporter_client.IncPixel(collector.Collect{
-					CampaignId:   t.CampaignId,
+					Tid:          t.Tid,
+					CampaignCode: t.CampaignCode,
 					OperatorCode: t.OperatorCode,
 				})
 			}
@@ -143,8 +144,8 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 			begin := time.Now()
 			if _, err := svc.db.Exec(query,
 				t.SentAt,
-				t.ServiceId,
-				t.CampaignId,
+				t.ServiceCode,
+				t.CampaignCode,
 				t.Tid,
 				t.Pixel,
 			); err != nil {
@@ -190,7 +191,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 				svc.dbConf.TablePrefix)
 
 			begin := time.Now()
-			if _, err := svc.db.Exec(query, t.CampaignId, t.Pixel); err != nil {
+			if _, err := svc.db.Exec(query, t.CampaignCode, t.Pixel); err != nil {
 				svc.m.Common.DBErrors.Inc()
 
 				logCtx.WithFields(log.Fields{

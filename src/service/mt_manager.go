@@ -44,7 +44,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 		})
 
 		if (e.EventName != "Unsubscribe" && e.EventName != " UnsubscribeAll") &&
-			(t.Msisdn == "" || t.ServiceId == 0) {
+			(t.Msisdn == "" || t.ServiceCode == "") {
 			svc.m.MTManager.Dropped.Inc()
 			svc.m.MTManager.Empty.Inc()
 
@@ -154,9 +154,9 @@ func writeTransaction(r rec.Record) (err error) {
 		r.Result,
 		r.OperatorCode,
 		r.CountryCode,
-		r.ServiceId,
+		r.ServiceCode,
 		r.SubscriptionId,
-		r.CampaignId,
+		r.CampaignCode,
 		r.OperatorToken,
 		int(r.Price),
 	); err != nil {
@@ -165,7 +165,8 @@ func writeTransaction(r rec.Record) (err error) {
 	}
 
 	reporter_client.IncTransaction(collector.Collect{
-		CampaignId:        r.CampaignId,
+		Tid:               r.Tid,
+		CampaignCode:      r.CampaignCode,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
@@ -185,7 +186,7 @@ func unsubscribe(r rec.Record) (err error) {
 	defer func() {
 		fields := log.Fields{
 			"tid":        r.Tid,
-			"service_id": r.ServiceId,
+			"service_id": r.ServiceCode,
 			"msisdn":     r.Msisdn,
 			"result":     r.SubscriptionStatus,
 			"took":       time.Since(begin),
@@ -214,7 +215,7 @@ func unsubscribe(r rec.Record) (err error) {
 		r.SubscriptionStatus,
 		lastPayAttemptAt,
 		r.Msisdn,
-		r.ServiceId,
+		r.ServiceCode,
 	)
 	if err != nil {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
@@ -228,7 +229,7 @@ func unsubscribe(r rec.Record) (err error) {
 	}
 	if count > 0 {
 		reporter_client.IncOutflow(collector.Collect{
-			CampaignId:        r.CampaignId,
+			CampaignCode:      r.CampaignCode,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
@@ -283,7 +284,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 		t := rec.Record{}
 		if err := rowsUns.Scan(
 			&t.SubscriptionId,
-			&t.CampaignId,
+			&t.CampaignCode,
 			&t.OperatorCode,
 			&t.AttemptsCount,
 		); err != nil {
@@ -336,7 +337,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 
 	for _, t := range unsubscribedRecs {
 		reporter_client.IncOutflow(collector.Collect{
-			CampaignId:        t.CampaignId,
+			CampaignCode:      t.CampaignCode,
 			OperatorCode:      t.OperatorCode,
 			Msisdn:            t.Msisdn,
 			Price:             0,
@@ -416,7 +417,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		return
 	}
 	reporter_client.IncOutflow(collector.Collect{
-		CampaignId:        r.CampaignId,
+		CampaignCode:      r.CampaignCode,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
@@ -550,11 +551,11 @@ func startRetry(r rec.Record) (err error) {
 		}
 	}()
 	if r.RetryDays == 0 {
-		err = fmt.Errorf("Retry Keep Days required, service id: %s", r.ServiceId)
+		err = fmt.Errorf("Retry Keep Days required, service id: %s", r.ServiceCode)
 		return
 	}
 	if r.DelayHours == 0 {
-		err = fmt.Errorf("Retry Delay Hours required, service id: %s", r.ServiceId)
+		err = fmt.Errorf("Retry Delay Hours required, service id: %s", r.ServiceCode)
 		return
 	}
 	query := fmt.Sprintf("INSERT INTO  %sretries ("+
@@ -578,9 +579,9 @@ func startRetry(r rec.Record) (err error) {
 		&r.Msisdn,
 		&r.OperatorCode,
 		&r.CountryCode,
-		&r.ServiceId,
+		&r.ServiceCode,
 		&r.SubscriptionId,
-		&r.CampaignId,
+		&r.CampaignCode,
 		&r.Price,
 	); err != nil {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)

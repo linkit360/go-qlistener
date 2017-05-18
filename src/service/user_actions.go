@@ -73,7 +73,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 
 		if _, err := svc.db.Exec(query,
 			t.SentAt,
-			t.CampaignId,
+			t.CampaignCode,
 			t.Msisdn,
 			t.Tid,
 			t.Action,
