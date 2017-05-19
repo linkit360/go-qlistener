@@ -86,8 +86,8 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 					err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
 					logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
 				} else {
-					t.CampaignCode = camp.Code
-					t.ServiceCode = camp.ServiceCode
+					t.CampaignCode = camp.Properties.Code
+					t.ServiceCode = camp.Properties.ServiceCode
 				}
 			} else {
 				logCtx.Error("campaign hash and id empty")
