@@ -2,16 +2,15 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/configor"
 
-	"fmt"
-	inmem_client "github.com/linkit360/go-inmem/rpcclient"
+	inmem_client "github.com/linkit360/go-mid/rpcclient"
 	"github.com/linkit360/go-qlistener/src/service"
-	reporter_client "github.com/linkit360/go-reporter/rpcclient"
 	"github.com/linkit360/go-utils/amqp"
 	"github.com/linkit360/go-utils/db"
 )
@@ -20,13 +19,13 @@ type ServerConfig struct {
 	Port string `default:"50304"`
 }
 type AppConfig struct {
-	AppName           string                       `yaml:"app_name"`
-	Server            ServerConfig                 `yaml:"server"`
-	InMemClientConfig inmem_client.ClientConfig    `yaml:"inmem_client"`
-	ReporterConfig    reporter_client.ClientConfig `yaml:"reporter_client"`
-	Service           service.ServiceConfig        `yaml:"service"`
-	Consumer          amqp.ConsumerConfig          `yaml:"consumer"`
-	DbConf            db.DataBaseConfig            `yaml:"db"`
+	AppName           string                    `yaml:"app_name"`
+	Server            ServerConfig              `yaml:"server"`
+	InMemClientConfig inmem_client.ClientConfig `yaml:"inmem_client"`
+	Service           service.ServiceConfig     `yaml:"service"`
+	Notifier          amqp.NotifierConfig       `yaml:"notifier"`
+	Consumer          amqp.ConsumerConfig       `yaml:"consumer"`
+	DbConf            db.DataBaseConfig         `yaml:"db"`
 }
 
 func LoadConfig() AppConfig {

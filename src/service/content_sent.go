@@ -8,7 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	inmem_service "github.com/linkit360/go-inmem/service"
+	inmem_service "github.com/linkit360/go-mid/service"
 )
 
 type EventNotifyContentSent struct {

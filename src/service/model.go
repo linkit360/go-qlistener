@@ -2,15 +2,15 @@ package service
 
 import (
 	"database/sql"
-	"fmt"
+	"encoding/json"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/oschwald/geoip2-golang"
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	inmem_client "github.com/linkit360/go-inmem/rpcclient"
-	reporter_client "github.com/linkit360/go-reporter/rpcclient"
+	inmem_client "github.com/linkit360/go-mid/rpcclient"
+	mid "github.com/linkit360/go-mid/service"
 	"github.com/linkit360/go-utils/amqp"
 	"github.com/linkit360/go-utils/config"
 	"github.com/linkit360/go-utils/db"
@@ -20,6 +20,7 @@ var svc Service
 
 type Service struct {
 	db                         *sql.DB
+	n                          *amqp.Notifier
 	consumer                   Consumers
 	contentSentChan            <-chan amqp_driver.Delivery
 	uniqueUrlsChan             <-chan amqp_driver.Delivery
@@ -63,19 +64,17 @@ type QueuesConfig struct {
 	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`
 	PixelSent      config.ConsumeQueueConfig `yaml:"pixel_sent"`
 	Redirects      config.ConsumeQueueConfig `yaml:"redirect"`
-}
-
-func OnExit() {
-	if err := reporter_client.SaveState(); err != nil {
-		log.WithField("error", err.Error()).Error("reporter save state")
-	}
+	Hit            string                    `yaml:"hit"`
+	Pixel          string                    `yaml:"pixel"`
+	Transaction    string                    `yaml:"transaction"`
+	Outflow        string                    `yaml:"outflow"`
 }
 
 func InitService(
 	name string,
 	sConf ServiceConfig,
 	inMemConfig inmem_client.ClientConfig,
-	reporterConfig reporter_client.ClientConfig,
+	notifierConfig amqp.NotifierConfig,
 	dbConf db.DataBaseConfig,
 	consumerConf amqp.ConsumerConfig,
 ) {
@@ -86,10 +85,6 @@ func InitService(
 	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf
 	svc.dbConf = dbConf
-
-	if err := reporter_client.Init(reporterConfig); err != nil {
-		log.Fatal(fmt.Errorf("reporter_client.Init: %s", err.Error()))
-	}
 
 	var err error
 	svc.ipDb, err = geoip2.Open(sConf.GeoIpPath)
@@ -105,6 +100,8 @@ func InitService(
 		}).Fatal("User Agent Parser init")
 	}
 
+	svc.n = amqp.NewNotifier(notifierConfig)
+
 	svc.m = newMetrics(appName)
 
 	svc.consumer = Consumers{
@@ -117,4 +114,22 @@ func InitService(
 		Pixels:      amqp.InitConsumer(consumerConf, sConf.Queue.PixelSent, svc.pixelsChan, processPixels),
 		Redirects:   amqp.InitConsumer(consumerConf, sConf.Queue.Redirects, svc.redirectsChan, processRedirects),
 	}
+}
+
+func publishReporter(queue string, c mid.Collect) (err error) {
+	event := amqp.EventNotify{
+		EventName: "ee",
+		EventData: c,
+	}
+	var body []byte
+	body, err = json.Marshal(event)
+
+	if err != nil {
+		return
+	}
+	svc.n.Publish(amqp.AMQPMessage{
+		QueueName: queue,
+		Body:      body,
+	})
+	return nil
 }

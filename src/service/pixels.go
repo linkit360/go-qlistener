@@ -8,9 +8,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
+	mid "github.com/linkit360/go-mid/service"
 	"github.com/linkit360/go-pixel/src/notifier"
-	reporter_client "github.com/linkit360/go-reporter/rpcclient"
-	"github.com/linkit360/go-reporter/server/src/collector"
 )
 
 type EventNotifyPixel struct {
@@ -90,7 +89,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"took": time.Since(begin),
 				}).Info("success")
 
-				reporter_client.IncPixel(collector.Collect{
+				publishReporter(svc.sConfig.Queue.Pixel, mid.Collect{
 					Tid:          t.Tid,
 					CampaignCode: t.CampaignCode,
 					OperatorCode: t.OperatorCode,

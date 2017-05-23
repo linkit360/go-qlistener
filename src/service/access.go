@@ -5,18 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
-
 	"github.com/ua-parser/uap-go/uaparser"
 
 	"github.com/linkit360/go-dispatcherd/src/rbmq"
-	inmem_client "github.com/linkit360/go-inmem/rpcclient"
-	reporter_client "github.com/linkit360/go-reporter/rpcclient"
-	"github.com/linkit360/go-reporter/server/src/collector"
-	"strings"
+	inmem_client "github.com/linkit360/go-mid/rpcclient"
+	mid "github.com/linkit360/go-mid/service"
 )
 
 type EventNotifyAccessCampaign struct {
@@ -256,8 +254,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			time.Sleep(time.Second)
 			goto ack
 		}
-
-		reporter_client.IncHit(collector.Collect{
+		publishReporter(svc.sConfig.Queue.Hit, mid.Collect{
 			Tid:          t.Tid,
 			CampaignCode: t.CampaignCode,
 			OperatorCode: t.OperatorCode,

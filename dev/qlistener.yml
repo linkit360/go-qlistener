@@ -66,6 +66,15 @@ consumer:
   binding_key: ""
   reconnect_delay: 10
 
+notifier:
+  rbmq:
+    conn:
+      user: linkit
+      pass: dg-U_oHhy7-
+      host: localhost
+      port: 5672
+    chan_capacity: 100
+
 db:
   conn_ttl: -1
   max_open_conns: 15

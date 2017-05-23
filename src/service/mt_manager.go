@@ -9,8 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	reporter_client "github.com/linkit360/go-reporter/rpcclient"
-	"github.com/linkit360/go-reporter/server/src/collector"
+	mid "github.com/linkit360/go-mid/service"
 	rec "github.com/linkit360/go-utils/rec"
 )
 
@@ -164,7 +163,7 @@ func writeTransaction(r rec.Record) (err error) {
 		return
 	}
 
-	reporter_client.IncTransaction(collector.Collect{
+	publishReporter(svc.sConfig.Queue.Transaction, mid.Collect{
 		Tid:               r.Tid,
 		CampaignCode:      r.CampaignCode,
 		OperatorCode:      r.OperatorCode,
@@ -228,12 +227,14 @@ func unsubscribe(r rec.Record) (err error) {
 		return
 	}
 	if count > 0 {
-		reporter_client.IncOutflow(collector.Collect{
+		r.Result = r.SubscriptionStatus
+		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
+			Tid:               r.Tid,
 			CampaignCode:      r.CampaignCode,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
-			TransactionResult: r.SubscriptionStatus,
+			TransactionResult: r.Result,
 			AttemptsCount:     r.AttemptsCount,
 		})
 	}
@@ -336,13 +337,15 @@ func unsubscribeAll(r rec.Record) (err error) {
 	}
 
 	for _, t := range unsubscribedRecs {
-		reporter_client.IncOutflow(collector.Collect{
-			CampaignCode:      t.CampaignCode,
-			OperatorCode:      t.OperatorCode,
-			Msisdn:            t.Msisdn,
-			Price:             0,
-			TransactionResult: r.SubscriptionStatus, // as we set in the begining
-			AttemptsCount:     t.AttemptsCount,
+		t.Result = t.SubscriptionStatus
+		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
+			Tid:               r.Tid,
+			CampaignCode:      r.CampaignCode,
+			OperatorCode:      r.OperatorCode,
+			Msisdn:            r.Msisdn,
+			Price:             r.Price,
+			TransactionResult: r.Result,
+			AttemptsCount:     r.AttemptsCount,
 		})
 	}
 	if len(unsubscribedRecs) == 0 {
@@ -416,14 +419,18 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
 		return
 	}
-	reporter_client.IncOutflow(collector.Collect{
+	// in case if it was unsub/unreg, it would catch, otherwise not.
+	r.Result = r.SubscriptionStatus
+	publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
+		Tid:               r.Tid,
 		CampaignCode:      r.CampaignCode,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
-		TransactionResult: r.SubscriptionStatus,
+		TransactionResult: r.Result,
 		AttemptsCount:     r.AttemptsCount,
 	})
+
 	svc.m.MTManager.WriteSubscriptionStatusDuration.Observe(time.Since(begin).Seconds())
 	svc.m.Common.DBUpdateDuration.Observe(time.Since(begin).Seconds())
 	return nil
