@@ -40,6 +40,7 @@ type Metrics struct {
 }
 
 type CommonMetrics struct {
+	Errors           m.Gauge
 	DBErrors         m.Gauge
 	DBInsertDuration prometheus.Summary
 	DBUpdateDuration prometheus.Summary
@@ -47,6 +48,7 @@ type CommonMetrics struct {
 
 func initCommonMetrics() *CommonMetrics {
 	cm := &CommonMetrics{
+		Errors:           m.NewGauge("", "", "errors", "errors"),
 		DBErrors:         m.NewGauge("", "", "db_errors", "db errors"),
 		DBInsertDuration: m.NewSummary(appName+"_insert_db_duration_seconds", "db insert duration seconds"),
 		DBUpdateDuration: m.NewSummary(appName+"_update_db_duration_seconds", "db update duration seconds"),
@@ -54,6 +56,7 @@ func initCommonMetrics() *CommonMetrics {
 
 	go func() {
 		for range time.Tick(time.Minute) {
+			cm.Errors.Update()
 			cm.DBErrors.Update()
 		}
 	}()

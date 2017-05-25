@@ -54,6 +54,12 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("failed")
 			goto ack
 		}
+		if t.CampaignCode == "" {
+			t.CampaignCode = "0"
+		}
+		if t.ServiceCode == "" {
+			t.ServiceCode = "0"
+		}
 
 		logCtx = logCtx.WithFields(log.Fields{
 			"tid": t.Tid,
@@ -106,6 +112,8 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

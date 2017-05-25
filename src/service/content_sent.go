@@ -81,7 +81,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Tid,
 			t.CampaignCode,
 			t.ServiceCode,
-			t.ContentId,
+			t.ContentCode,
 			t.SubscriptionId,
 			t.CountryCode,
 			t.OperatorCode,
@@ -114,6 +114,8 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

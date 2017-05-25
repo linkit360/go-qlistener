@@ -104,6 +104,8 @@ func processRedirects(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

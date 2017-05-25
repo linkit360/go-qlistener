@@ -91,9 +91,11 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 			logCtx.Warn("no price")
 		}
 		if t.ServiceCode == "" {
+			t.ServiceCode = "0"
 			logCtx.Warn("no service code")
 		}
 		if t.CampaignCode == "" {
+			t.CampaignCode = "0"
 			logCtx.Warn("no campaign code")
 		}
 		if t.SubscriptionId == 0 {
@@ -191,6 +193,8 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

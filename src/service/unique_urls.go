@@ -57,6 +57,18 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				}).Error("strange msisdn")
 				t.Msisdn = t.Msisdn[:31]
 			}
+			if t.CampaignCode == "" {
+				t.CampaignCode = "0"
+				logCtx.WithFields(log.Fields{}).Warn("no campaign")
+			}
+			if t.ServiceCode == "" {
+				t.ServiceCode = "0"
+				logCtx.WithFields(log.Fields{}).Warn("no service")
+			}
+			if t.ContentCode == "" {
+				t.ContentCode = "0"
+				logCtx.WithFields(log.Fields{}).Warn("no content")
+			}
 
 			begin = time.Now()
 			query = fmt.Sprintf("INSERT INTO %scontent_unique_urls ("+
@@ -81,7 +93,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.Tid,
 				t.CampaignCode,
 				t.ServiceCode,
-				t.ContentId,
+				t.ContentCode,
 				t.SubscriptionId,
 				t.CountryCode,
 				t.OperatorCode,
@@ -140,6 +152,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

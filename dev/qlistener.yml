@@ -16,6 +16,10 @@ service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
   queues:
+    reporter_hit: reporter_hit
+    reporter_pixel: reporter_pixel
+    reporter_transaction: reporter_transaction
+    reporter_outflow: reporter_outflow
     access_campaign:
       enabled: true
       name: access_campaign
@@ -47,7 +51,7 @@ service:
       prefetch_count: 10
       threads_count: 10
     unique_urls:
-      enabled: false
+      enabled: true
       name: unique_urls
       prefetch_count: 10
       threads_count: 10

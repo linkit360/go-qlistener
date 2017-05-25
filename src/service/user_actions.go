@@ -60,6 +60,10 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			}).Error("")
 			t.Msisdn = t.Msisdn[:31]
 		}
+		if t.CampaignCode == "" {
+			t.CampaignCode = "0"
+		}
+
 		begin = time.Now()
 		query = fmt.Sprintf("INSERT INTO %suser_actions ("+
 			"sent_at, "+
@@ -101,6 +105,8 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
+
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")

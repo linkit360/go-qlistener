@@ -64,10 +64,10 @@ type QueuesConfig struct {
 	MTManager      config.ConsumeQueueConfig `yaml:"mt_manager"`
 	PixelSent      config.ConsumeQueueConfig `yaml:"pixel_sent"`
 	Redirects      config.ConsumeQueueConfig `yaml:"redirect"`
-	Hit            string                    `yaml:"hit"`
-	Pixel          string                    `yaml:"pixel"`
-	Transaction    string                    `yaml:"transaction"`
-	Outflow        string                    `yaml:"outflow"`
+	Hit            string                    `yaml:"reporter_hit"`
+	Pixel          string                    `yaml:"reporter_pixel"`
+	Transaction    string                    `yaml:"reporter_transaction"`
+	Outflow        string                    `yaml:"reporter_outflow"`
 }
 
 func InitService(

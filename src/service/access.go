@@ -13,7 +13,7 @@ import (
 	"github.com/ua-parser/uap-go/uaparser"
 
 	"github.com/linkit360/go-dispatcherd/src/rbmq"
-	inmem_client "github.com/linkit360/go-mid/rpcclient"
+	mid_client "github.com/linkit360/go-mid/rpcclient"
 	mid "github.com/linkit360/go-mid/service"
 )
 
@@ -77,19 +77,28 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}
 		if t.CampaignCode == "" {
 			if t.CampaignHash != "" {
-				camp, err := inmem_client.GetCampaignByHash(t.CampaignHash)
+				camp, err := mid_client.GetCampaignByHash(t.CampaignHash)
 				if err != nil {
 					svc.m.AccessCampaign.UnknownHash.Inc()
 
 					err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
 					logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
 				} else {
-					t.CampaignCode = camp.Properties.Code
-					t.ServiceCode = camp.Properties.ServiceCode
+					t.CampaignCode = camp.Code
+					t.ServiceCode = camp.ServiceCode
 				}
 			} else {
 				logCtx.Error("campaign hash and id empty")
 			}
+		}
+		if t.CampaignCode == "" {
+			t.CampaignCode = "0"
+		}
+		if t.ServiceCode == "" {
+			t.ServiceCode = "0"
+		}
+		if t.ContentCode == "" {
+			t.ContentCode = "0"
 		}
 
 		IPs = strings.Split(t.IP, ", ")
@@ -211,7 +220,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			t.Error,
 			t.CampaignCode,
 			t.ServiceCode,
-			t.ContentId,
+			t.ContentCode,
 			ipInfo.Country,
 			ipInfo.Iso,
 			ipInfo.City,
@@ -248,6 +257,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 	ack:
 		if err := msg.Ack(false); err != nil {
+			svc.m.Common.Errors.Inc()
 			logCtx.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("cannot ack")
