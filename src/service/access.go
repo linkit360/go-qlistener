@@ -12,14 +12,14 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	"github.com/linkit360/go-dispatcherd/src/rbmq"
 	mid_client "github.com/linkit360/go-mid/rpcclient"
 	mid "github.com/linkit360/go-mid/service"
+	"github.com/linkit360/go-utils/structs"
 )
 
 type EventNotifyAccessCampaign struct {
-	EventName string                    `json:"event_name,omitempty"`
-	EventData rbmq.AccessCampaignNotify `json:"event_data,omitempty"`
+	EventName string                       `json:"event_name,omitempty"`
+	EventData structs.AccessCampaignNotify `json:"event_data,omitempty"`
 }
 
 func processAccessCampaign(deliveries <-chan amqp.Delivery) {
@@ -38,7 +38,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		var IPs []string
 		var ua *uaparser.Client
 		var e EventNotifyAccessCampaign
-		var t rbmq.AccessCampaignNotify
+		var t structs.AccessCampaignNotify
 
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.AccessCampaign.Dropped.Inc()

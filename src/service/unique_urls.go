@@ -8,7 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	inmem_service "github.com/linkit360/go-mid/service"
+	"github.com/linkit360/go-utils/structs"
 )
 
 func processUniqueUrls(deliveries <-chan amqp.Delivery) {
@@ -17,10 +17,10 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 			"q": svc.sConfig.Queue.UniqueUrls.Name,
 		})
 		var begin time.Time
-		var t inmem_service.ContentSentProperties
+		var t structs.ContentSentProperties
 		var query string
 
-		var e EventNotifyContentSent
+		var e structs.EventNotifyContentSent
 		if err := json.Unmarshal(msg.Body, &e); err != nil {
 			svc.m.UniqueUrls.Dropped.Inc()
 
