@@ -9,7 +9,7 @@ import (
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	inmem_client "github.com/linkit360/go-mid/rpcclient"
+	mid_client "github.com/linkit360/go-mid/rpcclient"
 	mid "github.com/linkit360/go-mid/service"
 	"github.com/linkit360/go-utils/amqp"
 	"github.com/linkit360/go-utils/config"
@@ -73,7 +73,7 @@ type QueuesConfig struct {
 func InitService(
 	name string,
 	sConf ServiceConfig,
-	inMemConfig inmem_client.ClientConfig,
+	midConfig mid_client.ClientConfig,
 	notifierConfig amqp.NotifierConfig,
 	dbConf db.DataBaseConfig,
 	consumerConf amqp.ConsumerConfig,
@@ -81,7 +81,7 @@ func InitService(
 	log.SetLevel(log.DebugLevel)
 	appName = name
 
-	inmem_client.Init(inMemConfig)
+	mid_client.Init(midConfig)
 	svc.db = db.Init(dbConf)
 	svc.sConfig = sConf
 	svc.dbConf = dbConf

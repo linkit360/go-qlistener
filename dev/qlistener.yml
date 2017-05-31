@@ -3,7 +3,7 @@ app_name: qlistener
 server:
   port: 50304
 
-inmem_client:
+mid_client:
   port: 50307
   timeout: 10
 

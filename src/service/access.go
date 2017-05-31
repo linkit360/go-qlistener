@@ -66,14 +66,26 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}).Error("strange msisdn, truncating")
 			t.Msisdn = t.Msisdn[:31]
 		}
-		if t.UrlPath == "" && t.Tid == "" && t.CampaignHash == "" {
+		if t.UrlPath == "" {
+			logCtx.WithFields(log.Fields{
+				"error": "Empty message",
+				"msg":   "dropped",
+			}).Warn("no urlpath")
+		}
+		if t.Tid == "" {
 			svc.m.AccessCampaign.Dropped.Inc()
 			svc.m.AccessCampaign.Empty.Inc()
 			logCtx.WithFields(log.Fields{
 				"error": "Empty message",
 				"msg":   "dropped",
-			}).Warn("no urlpath")
+			}).Warn("no tid")
 			goto ack
+		}
+		if t.CampaignHash == "" {
+			logCtx.WithFields(log.Fields{
+				"error": "no campaign hash",
+				"msg":   "dropped",
+			}).Warn("")
 		}
 		if t.CampaignCode == "" {
 			if t.CampaignHash != "" {
