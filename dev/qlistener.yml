@@ -7,11 +7,6 @@ mid_client:
   port: 50307
   timeout: 10
 
-reporter_client:
-  dsn: :50315
-  timeout: 10
-  state_config_file_path: /home/centos/linkit/qlistener_reporter.json
-
 service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml

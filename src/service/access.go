@@ -267,6 +267,12 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		logCtx.WithFields(log.Fields{
 			"took": time.Since(begin).String(),
 		}).Info("success")
+		publishReporter(svc.sConfig.Queue.Hit, mid.Collect{
+			Tid:          t.Tid,
+			CampaignCode: t.CampaignCode,
+			OperatorCode: t.OperatorCode,
+			Msisdn:       t.Msisdn,
+		})
 	ack:
 		if err := msg.Ack(false); err != nil {
 			svc.m.Common.Errors.Inc()
@@ -276,12 +282,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			time.Sleep(time.Second)
 			goto ack
 		}
-		publishReporter(svc.sConfig.Queue.Hit, mid.Collect{
-			Tid:          t.Tid,
-			CampaignCode: t.CampaignCode,
-			OperatorCode: t.OperatorCode,
-			Msisdn:       t.Msisdn,
-		})
 	}
 }
 
