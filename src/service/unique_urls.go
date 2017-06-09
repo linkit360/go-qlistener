@@ -65,8 +65,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.ServiceCode = "0"
 				logCtx.WithFields(log.Fields{}).Warn("no service")
 			}
-			if t.ContentCode == "" {
-				t.ContentCode = "0"
+			if t.ContentId == "" {
+				t.ContentId = "0"
 				logCtx.WithFields(log.Fields{}).Warn("no content")
 			}
 
@@ -93,7 +93,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.Tid,
 				t.CampaignCode,
 				t.ServiceCode,
-				t.ContentCode,
+				t.ContentId,
 				t.SubscriptionId,
 				t.CountryCode,
 				t.OperatorCode,

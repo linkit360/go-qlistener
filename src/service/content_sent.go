@@ -76,7 +76,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 			t.Tid,
 			t.CampaignCode,
 			t.ServiceCode,
-			t.ContentCode,
+			t.ContentId,
 			t.SubscriptionId,
 			t.CountryCode,
 			t.OperatorCode,
