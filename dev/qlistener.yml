@@ -76,8 +76,8 @@ notifier:
 
 db:
   conn_ttl: -1
-  max_open_conns: 15
-  max_idle_conns: 10
+  max_open_conns: 5
+  max_idle_conns: 2
   timeout: 30
   name: linkit_dev
   user: linkit

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/oschwald/geoip2-golang"
+	log "github.com/sirupsen/logrus"
 	amqp_driver "github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 

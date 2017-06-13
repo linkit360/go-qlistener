@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 
 	"github.com/linkit360/go-dispatcherd/src/rbmq"
