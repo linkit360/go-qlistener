@@ -145,7 +145,24 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 
 			svc.m.UniqueUrls.DeleteUniqUrlSuccess.Inc()
 			svc.m.UniqueUrls.DeleteFromDBDuration.Observe(time.Since(begin).Seconds())
+
+			query = fmt.Sprintf("DELETE FROM %scontent_unique_urls "+
+				"WHERE sent_at < (CURRENT_TIMESTAMP - 10* INTERVAL '1 day' )",
+				svc.dbConf.TablePrefix)
+
+			if _, err := svc.db.Exec(query); err != nil {
+				svc.m.Common.DBErrors.Inc()
+				svc.m.UniqueUrls.DeleteUniqUrlErrors.Inc()
+
+				logCtx.WithFields(log.Fields{
+					"query": query,
+					"msg":   "requeue",
+					"error": err.Error(),
+				}).Error("failed")
+				continue
+			}
 		}
+
 		logCtx.WithFields(log.Fields{
 			"event": e.EventName,
 			"took":  time.Since(begin).String(),
