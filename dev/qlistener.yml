@@ -10,6 +10,7 @@ mid_client:
 service:
   geoip_path: /home/centos/linkit/GeoLite2-City.mmdb
   ua_parser_regexes_path: /home/centos/linkit/regexes.yaml
+  unique_urls_cleanup_days: 3
   queues:
     reporter_hit: reporter_hit
     reporter_pixel: reporter_pixel
