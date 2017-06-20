@@ -195,7 +195,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			"error, "+
 			"id_campaign, "+
 			"id_service, "+
-			"id_content, "+
 			"geoip_country, "+
 			"geoip_iso, "+
 			"geoip_city, "+
@@ -210,7 +209,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			"geoip_accuracy_radius "+
 			")"+
 			" values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,  "+
-			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)",
+			" $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
 			svc.dbConf.TablePrefix)
 
 		if _, err := svc.db.Exec(query,
@@ -232,7 +231,6 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			t.Error,
 			t.CampaignCode,
 			t.ServiceCode,
-			t.ContentCode,
 			ipInfo.Country,
 			ipInfo.Iso,
 			ipInfo.City,
@@ -256,6 +254,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 				"query": query,
 			}).Error("failed")
 
+			time.Sleep(time.Second)
 			msg.Nack(false, true)
 			continue
 		}

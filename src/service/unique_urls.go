@@ -109,6 +109,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 					"msg":   "requeue",
 					"error": err.Error(),
 				}).Error("failed")
+				time.Sleep(time.Second)
 				msg.Nack(false, true)
 				continue
 			}
@@ -139,6 +140,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 					"msg":   "requeue",
 					"error": err.Error(),
 				}).Error("failed")
+				time.Sleep(time.Second)
 				msg.Nack(false, true)
 				continue
 			}
@@ -161,6 +163,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 					"msg":   "requeue",
 					"error": err.Error(),
 				}).Error("failed")
+				time.Sleep(time.Second)
+				msg.Nack(false, true)
 				continue
 			}
 		}

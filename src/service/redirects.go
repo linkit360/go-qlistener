@@ -85,12 +85,12 @@ func processRedirects(deliveries <-chan amqp.Delivery) {
 		); err != nil {
 			svc.m.Common.DBErrors.Inc()
 			svc.m.UserActions.AddToDBErrors.Inc()
-
 			logCtx.WithFields(log.Fields{
 				"query": query,
 				"msg":   "requeue",
 				"error": err.Error(),
 			}).Error("failed")
+			time.Sleep(time.Second)
 			msg.Nack(false, true)
 			continue
 		}

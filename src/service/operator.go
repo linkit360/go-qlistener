@@ -173,6 +173,7 @@ func operatorTransactions(deliveries <-chan amqp.Delivery) {
 				"query": query,
 				"t":     fmt.Sprintf("%#v", t),
 			}).Error("failed")
+			time.Sleep(time.Second)
 		nack:
 			if err := msg.Nack(false, true); err != nil {
 				logCtx.WithFields(log.Fields{

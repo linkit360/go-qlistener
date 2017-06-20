@@ -92,6 +92,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 				"error": err.Error(),
 				"body":  string(msg.Body),
 			}).Error("failed")
+			time.Sleep(time.Second)
 			msg.Nack(false, true)
 			continue
 		}

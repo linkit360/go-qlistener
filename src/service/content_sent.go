@@ -83,7 +83,7 @@ func processContentSent(deliveries <-chan amqp.Delivery) {
 		); err != nil {
 			svc.m.Common.DBErrors.Inc()
 			svc.m.ContentSent.AddToDBErrors.Inc()
-
+			time.Sleep(time.Second)
 			logCtx.WithFields(log.Fields{
 				"query": query,
 				"msg":   "requeue",

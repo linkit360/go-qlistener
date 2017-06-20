@@ -104,6 +104,7 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 				"event": e.EventName,
 				"error": err.Error(),
 			}).Error("failed")
+			time.Sleep(time.Second)
 			msg.Nack(false, true)
 			continue
 		} else {
@@ -470,7 +471,7 @@ func removeRetry(r rec.Record) (err error) {
 		  price,
 		  last_pay_attempt_at ,
 		  attempts_count ,
-		  keep_days ,
+		  retry_days ,
 		  delay_hours ,
 		  msisdn ,
 		  operator_code ,
@@ -486,7 +487,7 @@ func removeRetry(r rec.Record) (err error) {
 		  price,
 		  last_pay_attempt_at ,
 		  attempts_count ,
-		  keep_days ,
+		  retry_days ,
 		  delay_hours ,
 		  msisdn ,
 		  operator_code ,

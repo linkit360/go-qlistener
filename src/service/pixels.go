@@ -85,6 +85,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"error": err.Error(),
 					"msg":   "dropped",
 				}).Error("failed")
+				time.Sleep(time.Second)
 				msg.Nack(false, true)
 				continue
 			} else {
@@ -125,7 +126,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"query": query,
 					"error": err.Error(),
 				}).Error("requeue")
-
+				time.Sleep(time.Second)
 				msg.Nack(false, true)
 				continue
 			} else {
@@ -202,6 +203,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 					"query": query,
 					"error": err.Error(),
 				}).Error("requeue")
+				time.Sleep(time.Second)
 				msg.Nack(false, true)
 				continue
 			} else {
