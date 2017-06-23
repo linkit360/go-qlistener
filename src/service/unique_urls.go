@@ -37,7 +37,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 		})
 
 		if e.EventName == "create" {
-			if t.CampaignCode == "" ||
+			if t.CampaignId == "" ||
 				t.ServiceCode == "" {
 				svc.m.UniqueUrls.Dropped.Inc()
 				svc.m.UniqueUrls.Empty.Inc()
@@ -57,8 +57,8 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				}).Error("strange msisdn")
 				t.Msisdn = t.Msisdn[:31]
 			}
-			if t.CampaignCode == "" {
-				t.CampaignCode = "0"
+			if t.CampaignId == "" {
+				t.CampaignId = "0"
 				logCtx.WithFields(log.Fields{}).Warn("no campaign")
 			}
 			if t.ServiceCode == "" {
@@ -91,7 +91,7 @@ func processUniqueUrls(deliveries <-chan amqp.Delivery) {
 				t.SentAt,
 				t.Msisdn,
 				t.Tid,
-				t.CampaignCode,
+				t.CampaignId,
 				t.ServiceCode,
 				t.ContentId,
 				t.SubscriptionId,

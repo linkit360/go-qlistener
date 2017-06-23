@@ -60,8 +60,8 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 			}).Error("")
 			t.Msisdn = t.Msisdn[:31]
 		}
-		if t.CampaignCode == "" {
-			t.CampaignCode = "0"
+		if t.CampaignId == "" {
+			t.CampaignId = "0"
 		}
 
 		begin = time.Now()
@@ -77,7 +77,7 @@ func processUserActions(deliveries <-chan amqp.Delivery) {
 
 		if _, err := svc.db.Exec(query,
 			t.SentAt,
-			t.CampaignCode,
+			t.CampaignId,
 			t.Msisdn,
 			t.Tid,
 			t.Action,

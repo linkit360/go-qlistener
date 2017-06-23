@@ -12,7 +12,6 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/ua-parser/uap-go/uaparser"
 
-	mid_client "github.com/linkit360/go-mid/rpcclient"
 	mid "github.com/linkit360/go-mid/service"
 	"github.com/linkit360/go-utils/structs"
 )
@@ -81,36 +80,14 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			}).Warn("no tid")
 			goto ack
 		}
-		if t.CampaignHash == "" {
-			logCtx.WithFields(log.Fields{
-				"error": "no campaign hash",
-				"msg":   "dropped",
-			}).Warn("")
-		}
-		if t.CampaignCode == "" {
-			if t.CampaignHash != "" {
-				camp, err := mid_client.GetCampaignByHash(t.CampaignHash)
-				if err != nil {
-					svc.m.AccessCampaign.UnknownHash.Inc()
-
-					err := fmt.Errorf("GetCampaignByHash: %s", err.Error())
-					logCtx.WithField("errror", err.Error()).Error("cannot get campaign by hash")
-				} else {
-					t.CampaignCode = camp.Code
-					t.ServiceCode = camp.ServiceCode
-				}
-			} else {
-				logCtx.Error("campaign hash and id empty")
-			}
-		}
-		if t.CampaignCode == "" {
-			t.CampaignCode = "0"
+		if t.CampaignId == "" {
+			t.CampaignId = "-"
 		}
 		if t.ServiceCode == "" {
-			t.ServiceCode = "0"
+			t.ServiceCode = "-"
 		}
 		if t.ContentCode == "" {
-			t.ContentCode = "0"
+			t.ContentCode = "-"
 		}
 
 		IPs = strings.Split(t.IP, ", ")
@@ -229,7 +206,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 			t.Method,
 			t.Headers,
 			t.Error,
-			t.CampaignCode,
+			t.CampaignId,
 			t.ServiceCode,
 			ipInfo.Country,
 			ipInfo.Iso,
@@ -268,7 +245,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 		publishReporter(svc.sConfig.Queue.Hit, mid.Collect{
 			Tid:          t.Tid,
-			CampaignCode: t.CampaignCode,
+			CampaignCode: t.CampaignId,
 			OperatorCode: t.OperatorCode,
 			Msisdn:       t.Msisdn,
 		})

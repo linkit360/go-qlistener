@@ -54,8 +54,8 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			}).Error("failed")
 			goto ack
 		}
-		if t.CampaignCode == "" {
-			t.CampaignCode = "0"
+		if t.CampaignId == "" {
+			t.CampaignId = "0"
 		}
 		if t.ServiceCode == "" {
 			t.ServiceCode = "0"
@@ -164,7 +164,7 @@ func writeTransaction(r rec.Record) (err error) {
 		r.CountryCode,
 		r.ServiceCode,
 		r.SubscriptionId,
-		r.CampaignCode,
+		r.CampaignId,
 		r.OperatorToken,
 		int(r.Price),
 	); err != nil {
@@ -174,7 +174,7 @@ func writeTransaction(r rec.Record) (err error) {
 
 	publishReporter(svc.sConfig.Queue.Transaction, mid.Collect{
 		Tid:               r.Tid,
-		CampaignCode:      r.CampaignCode,
+		CampaignCode:      r.CampaignId,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
@@ -239,7 +239,7 @@ func unsubscribe(r rec.Record) (err error) {
 		r.Result = r.SubscriptionStatus
 		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 			Tid:               r.Tid,
-			CampaignCode:      r.CampaignCode,
+			CampaignCode:      r.CampaignId,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
@@ -294,7 +294,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 		t := rec.Record{}
 		if err := rowsUns.Scan(
 			&t.SubscriptionId,
-			&t.CampaignCode,
+			&t.CampaignId,
 			&t.OperatorCode,
 			&t.AttemptsCount,
 		); err != nil {
@@ -349,7 +349,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 		t.Result = t.SubscriptionStatus
 		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 			Tid:               r.Tid,
-			CampaignCode:      r.CampaignCode,
+			CampaignCode:      r.CampaignId,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
@@ -432,7 +432,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	r.Result = r.SubscriptionStatus
 	publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 		Tid:               r.Tid,
-		CampaignCode:      r.CampaignCode,
+		CampaignCode:      r.CampaignId,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
@@ -597,7 +597,7 @@ func startRetry(r rec.Record) (err error) {
 		&r.CountryCode,
 		&r.ServiceCode,
 		&r.SubscriptionId,
-		&r.CampaignCode,
+		&r.CampaignId,
 		&r.Price,
 	); err != nil {
 		err = fmt.Errorf("db.Exec: %s, query: %s", err.Error(), query)
