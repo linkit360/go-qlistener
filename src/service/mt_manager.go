@@ -55,10 +55,10 @@ func processMTManagerTasks(deliveries <-chan amqp.Delivery) {
 			goto ack
 		}
 		if t.CampaignId == "" {
-			t.CampaignId = "0"
+			t.CampaignId = "-"
 		}
 		if t.ServiceCode == "" {
-			t.ServiceCode = "0"
+			t.ServiceCode = "-"
 		}
 
 		logCtx = logCtx.WithFields(log.Fields{
