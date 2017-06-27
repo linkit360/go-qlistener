@@ -29,7 +29,7 @@ type AppConfig struct {
 }
 
 func LoadConfig() AppConfig {
-	cfg := flag.String("config", "dev/appconfig.yml", "configuration yml file")
+	cfg := flag.String("config", "dev/qlistener.yml", "configuration yml file")
 	flag.Parse()
 	var appConfig AppConfig
 
