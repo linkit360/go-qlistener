@@ -33,7 +33,6 @@ func RunServer() {
 
 	m.AddHandler(r)
 
-	r.Run(":" + appConfig.Server.Port)
-
-	log.WithField("port", appConfig.Server.Port).Info("Qlistener init")
+	r.Run(appConfig.Server.Host + ":" + appConfig.Server.Port)
+	log.WithField("dsn", appConfig.Server.Host+":"+appConfig.Server.Port).Info("init")
 }

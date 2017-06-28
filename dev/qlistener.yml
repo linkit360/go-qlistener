@@ -59,10 +59,10 @@ service:
 
 consumer:
   conn:
-      user: linkit
-      pass: dg-U_oHhy7-
-      host: localhost
-      port: 5672
+    user: linkit
+    pass: dg-U_oHhy7-
+    host: localhost
+    port: 5672
   binding_key: ""
   reconnect_delay: 10
 
