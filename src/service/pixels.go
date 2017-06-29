@@ -97,7 +97,7 @@ func processPixels(deliveries <-chan amqp.Delivery) {
 
 				publishReporter(svc.sConfig.Queue.Pixel, mid.Collect{
 					Tid:          t.Tid,
-					CampaignCode: t.CampaignCode,
+					CampaignUUID: t.CampaignCode,
 					OperatorCode: t.OperatorCode,
 				})
 			}

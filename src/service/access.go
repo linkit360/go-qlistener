@@ -245,7 +245,7 @@ func processAccessCampaign(deliveries <-chan amqp.Delivery) {
 		}).Info("success")
 		publishReporter(svc.sConfig.Queue.Hit, mid.Collect{
 			Tid:          t.Tid,
-			CampaignCode: t.CampaignId,
+			CampaignUUID: t.CampaignId,
 			OperatorCode: t.OperatorCode,
 			Msisdn:       t.Msisdn,
 		})

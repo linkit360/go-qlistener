@@ -174,7 +174,7 @@ func writeTransaction(r rec.Record) (err error) {
 
 	publishReporter(svc.sConfig.Queue.Transaction, mid.Collect{
 		Tid:               r.Tid,
-		CampaignCode:      r.CampaignId,
+		CampaignUUID:      r.CampaignId,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
@@ -239,7 +239,7 @@ func unsubscribe(r rec.Record) (err error) {
 		r.Result = r.SubscriptionStatus
 		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 			Tid:               r.Tid,
-			CampaignCode:      r.CampaignId,
+			CampaignUUID:      r.CampaignId,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
@@ -349,7 +349,7 @@ func unsubscribeAll(r rec.Record) (err error) {
 		t.Result = t.SubscriptionStatus
 		publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 			Tid:               r.Tid,
-			CampaignCode:      r.CampaignId,
+			CampaignUUID:      r.CampaignId,
 			OperatorCode:      r.OperatorCode,
 			Msisdn:            r.Msisdn,
 			Price:             r.Price,
@@ -432,7 +432,7 @@ func writeSubscriptionStatus(r rec.Record) (err error) {
 	r.Result = r.SubscriptionStatus
 	publishReporter(svc.sConfig.Queue.Outflow, mid.Collect{
 		Tid:               r.Tid,
-		CampaignCode:      r.CampaignId,
+		CampaignUUID:      r.CampaignId,
 		OperatorCode:      r.OperatorCode,
 		Msisdn:            r.Msisdn,
 		Price:             r.Price,
